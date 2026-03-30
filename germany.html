@@ -1426,7 +1426,8 @@ if (stateMapEl) {
     pane: 'overlayPane'
   }).addTo(stateMap);
 
-  fetch('https://raw.githubusercontent.com/isellsoap/deutschlandGeoJSON/main/2_bundeslaender/4_niedrig.geo.json')
+  // Load GeoJSON from local file to avoid CORS issues
+  fetch('bundeslaender.geo.json')
     .then(r => r.json())
     .then(geojson => {
       L.geoJSON(geojson, {
