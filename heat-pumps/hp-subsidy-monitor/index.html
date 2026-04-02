@@ -739,7 +739,7 @@ footer {
       <div class="logo-icon"><i data-lucide="zap" style="width:22px;height:22px;color:#0f172a;"></i></div>
       <div>
         <h1>HP Subsidy Monitor</h1>
-        <div class="subtitle">Global Heat Pump & Hybrid Subsidy Dashboard</div>
+        <div class="subtitle">European Heat Pump & Hybrid Subsidy Dashboard</div>
       </div>
     </div>
     <div class="header-actions">
@@ -755,13 +755,13 @@ footer {
 <section class="kpi-bar" id="kpi-section">
   <div class="kpi-card">
     <div class="kpi-label">Countries Tracked</div>
-    <div class="kpi-value">13</div>
-    <div class="kpi-change neutral">22 subsidy programs</div>
+    <div class="kpi-value">28</div>
+    <div class="kpi-change neutral">40+ subsidy programs</div>
   </div>
   <div class="kpi-card">
     <div class="kpi-label">Highest Subsidy</div>
-    <div class="kpi-value">€21,000</div>
-    <div class="kpi-change up">Germany (BEG/KfW)</div>
+    <div class="kpi-value">€24,000</div>
+    <div class="kpi-change up">Luxembourg (Klimabonus)</div>
   </div>
   <div class="kpi-card">
     <div class="kpi-label">Fastest Growing Market</div>
@@ -791,10 +791,8 @@ footer {
     <div class="filter-group">
       <label>Region:</label>
       <select id="filter-region" onchange="applyFilters()">
-        <option value="all">All Regions</option>
+        <option value="all">All Countries</option>
         <option value="europe">Europe</option>
-        <option value="americas">Americas</option>
-        <option value="asia">Asia</option>
       </select>
     </div>
     <div class="filter-group">
@@ -825,7 +823,7 @@ footer {
 <!-- Interactive Choropleth Map -->
 <section class="section">
   <div class="section-header">
-    <div class="section-title"><i data-lucide="globe" style="width:20px;height:20px;color:var(--accent);"></i> Global Subsidy Map</div>
+    <div class="section-title"><i data-lucide="globe" style="width:20px;height:20px;color:var(--accent);"></i> European Subsidy Map</div>
     <div class="map-controls">
       <button class="map-metric-btn active" onclick="setMapMetric('subsidy', this)">Max Subsidy</button>
       <button class="map-metric-btn" onclick="setMapMetric('sales', this)">Market Size</button>
@@ -977,10 +975,10 @@ footer {
 <!-- Footer -->
 <footer>
   <div class="container">
-    <p><strong>HP Subsidy Monitor</strong> — Global Heat Pump & Hybrid Subsidy Dashboard</p>
+    <p><strong>HP Subsidy Monitor</strong> — European Heat Pump & Hybrid Subsidy Dashboard</p>
     <p style="margin-top:4px; font-size:0.75rem;">Data compiled from official government portals, Eurostat, EHPA, IEA, and national heat pump associations.<br>All data should be verified before use in business decisions. Subsidy amounts and conditions may change.</p>
     <p style="margin-top:8px;">Last updated: March 29, 2026</p>
-    <p style="margin-top:8px; font-size:0.75rem;"><a href="/impressum.html" style="color:var(--blue-400); text-decoration:none;">Impressum</a> · <a href="/datenschutz.html" style="color:var(--blue-400); text-decoration:none;">Datenschutz</a></p>
+    <p style="margin-top:8px; font-size:0.75rem;"><a href="impressum.html" style="color:var(--blue-400); text-decoration:none;">Impressum</a> · <a href="datenschutz.html" style="color:var(--blue-400); text-decoration:none;">Datenschutz</a></p>
   </div>
 </footer>
 
@@ -1038,17 +1036,36 @@ const subsidies = [
   { country:"UK", program:"Boiler Upgrade Scheme", type:"grant", amount_eur:"~€8,800", amount_max:8800, eligible_tech:"heat_pump", status:"active", valid_until:"2028-03", alert:null, flag:"🇬🇧" },
   { country:"Czech Republic", program:"Nová Zelená Úsporám", type:"grant", amount_eur:"€3,000–€5,200", amount_max:5200, eligible_tech:"heat_pump", status:"expiring", valid_until:"Suspended", alert:"updated", flag:"🇨🇿" },
   { country:"Czech Republic", program:"NZÚ Light (low-income)", type:"grant", amount_eur:"Up to ~€6,000", amount_max:6000, eligible_tech:"heat_pump", status:"announced", valid_until:"2026-06+", alert:"new", flag:"🇨🇿" },
-  { country:"USA", program:"IRA Section 25C Tax Credit", type:"tax_credit", amount_eur:"Up to ~€1,850/yr", amount_max:1850, eligible_tech:"heat_pump", status:"expiring", valid_until:"Expired 2025-12", alert:"updated", flag:"🇺🇸" },
-  { country:"USA", program:"HEAR/HEEHRA Rebates (IRA)", type:"rebate", amount_eur:"Up to ~€7,400", amount_max:7400, eligible_tech:"heat_pump", status:"active", valid_until:"Until funds exhausted", alert:null, flag:"🇺🇸" },
-  { country:"China", program:"Home Appliance Trade-In", type:"rebate", amount_eur:"Up to ~€190", amount_max:190, eligible_tech:"heat_pump", status:"active", valid_until:"2026-12", alert:"new", flag:"🇨🇳" },
-  { country:"China", program:"Coal-to-Clean Heating", type:"grant", amount_eur:"€1,270–€3,050", amount_max:3050, eligible_tech:"heat_pump", status:"active", valid_until:"Ongoing (tapering)", alert:null, flag:"🇨🇳" },
-  { country:"Japan", program:"Hot Water Energy Conservation 2026", type:"grant", amount_eur:"Up to ~€760", amount_max:760, eligible_tech:"heat_pump", status:"active", valid_until:"2026-12", alert:"new", flag:"🇯🇵" }
+  // NEW COUNTRIES
+  { country:"Belgium", program:"Mijn VerbouwPremie (Flanders)", type:"grant", amount_eur:"€4,000–€5,500", amount_max:5500, eligible_tech:"heat_pump", status:"active", valid_until:"Ongoing", alert:null, flag:"🇧🇪" },
+  { country:"Belgium", program:"Prime Énergie (Wallonia)", type:"grant", amount_eur:"€1,000–€6,000", amount_max:6000, eligible_tech:"both", status:"active", valid_until:"2026-09", alert:null, flag:"🇧🇪" },
+  { country:"Denmark", program:"Varmepumpepuljen 2026", type:"grant", amount_eur:"~€3,620", amount_max:3620, eligible_tech:"heat_pump", status:"active", valid_until:"2026-11", alert:"new", flag:"🇩🇰" },
+  { country:"Austria", program:"Sanierungsoffensive 2026", type:"grant", amount_eur:"Up to €7,500", amount_max:7500, eligible_tech:"heat_pump", status:"active", valid_until:"2030", alert:null, flag:"🇦🇹" },
+  { country:"Switzerland", program:"Gebäudeprogramm", type:"grant", amount_eur:"€2,100–€10,500", amount_max:10500, eligible_tech:"heat_pump", status:"active", valid_until:"Ongoing", alert:null, flag:"🇨🇭" },
+  { country:"Luxembourg", program:"Klimabonus Wunnen", type:"grant", amount_eur:"€3,000–€24,000", amount_max:24000, eligible_tech:"both", status:"active", valid_until:"Ongoing", alert:"new", flag:"🇱🇺" },
+  { country:"Slovakia", program:"Zelená domácnostiam II", type:"grant", amount_eur:"€3,800–€4,370", amount_max:4370, eligible_tech:"heat_pump", status:"active", valid_until:"Ongoing", alert:null, flag:"🇸🇰" },
+  { country:"Estonia", program:"KredEx Heater Upgrade", type:"grant", amount_eur:"Up to €10,000", amount_max:10000, eligible_tech:"heat_pump", status:"active", valid_until:"Until funds exhausted", alert:null, flag:"🇪🇪" },
+  { country:"Latvia", program:"EKII Programme", type:"grant", amount_eur:"Varies (€85M budget)", amount_max:5000, eligible_tech:"heat_pump", status:"active", valid_until:"2029", alert:null, flag:"🇱🇻" },
+  { country:"Lithuania", program:"LEA HP Support", type:"grant", amount_eur:"Up to ~€4,280", amount_max:4280, eligible_tech:"heat_pump", status:"active", valid_until:"2028", alert:null, flag:"🇱🇹" },
+  { country:"Bulgaria", program:"NRRP Renovation", type:"grant", amount_eur:"100% (multifamily only)", amount_max:5000, eligible_tech:"heat_pump", status:"active", valid_until:"Ongoing", alert:null, flag:"🇧🇬" },
+  { country:"Croatia", program:"FZOEU Energy Renovation", type:"grant", amount_eur:"Up to ~€8,500", amount_max:8500, eligible_tech:"heat_pump", status:"announced", valid_until:"2026 call expected", alert:null, flag:"🇭🇷" },
+  { country:"Hungary", program:"Rural HP + KEHOP Plusz", type:"grant", amount_eur:"Up to ~€12,500", amount_max:12500, eligible_tech:"heat_pump", status:"active", valid_until:"2026-06", alert:null, flag:"🇭🇺" },
+  { country:"Romania", program:"Casa Verde Plus", type:"grant", amount_eur:"€4,500–€8,000", amount_max:8000, eligible_tech:"heat_pump", status:"active", valid_until:"Ongoing", alert:null, flag:"🇷🇴" },
+  { country:"Serbia", program:"Municipal programs", type:"grant", amount_eur:"€850–€1,700", amount_max:1700, eligible_tech:"heat_pump", status:"active", valid_until:"Annual calls", alert:null, flag:"🇷🇸" },
+  { country:"Ukraine", program:"IQ Energy (EBRD)", type:"loan", amount_eur:"20–35% reimbursement", amount_max:3000, eligible_tech:"heat_pump", status:"active", valid_until:"Ongoing (war-limited)", alert:null, flag:"🇺🇦" },
+  { country:"Turkey", program:"No residential HP subsidy", type:"grant", amount_eur:"SME only (~€40,500)", amount_max:0, eligible_tech:"heat_pump", status:"active", valid_until:"N/A", alert:null, flag:"🇹🇷" },
+  { country:"Portugal", program:"E-Lar (PRR)", type:"grant", amount_eur:"Up to €15,000", amount_max:15000, eligible_tech:"heat_pump", status:"active", valid_until:"2026-06", alert:null, flag:"🇵🇹" },
+  { country:"Spain", program:"PRTR + IRPF deduction", type:"grant", amount_eur:"€3,000 + 20–60% tax", amount_max:6000, eligible_tech:"heat_pump", status:"active", valid_until:"2026-12", alert:null, flag:"🇪🇸" }
 ];
 
 const countryRegions = {
   "France":"europe","Germany":"europe","Italy":"europe","Netherlands":"europe",
   "Poland":"europe","Sweden":"europe","Norway":"europe","Finland":"europe",
-  "UK":"europe","Czech Republic":"europe","USA":"americas","China":"asia","Japan":"asia"
+  "UK":"europe","Czech Republic":"europe","Belgium":"europe","Denmark":"europe",
+  "Austria":"europe","Switzerland":"europe","Luxembourg":"europe","Slovakia":"europe",
+  "Estonia":"europe","Latvia":"europe","Lithuania":"europe","Bulgaria":"europe",
+  "Croatia":"europe","Hungary":"europe","Romania":"europe","Serbia":"europe",
+  "Ukraine":"europe","Turkey":"europe","Portugal":"europe","Spain":"europe"
 };
 
 const energyPrices = [
@@ -1062,9 +1079,24 @@ const energyPrices = [
   { country:"Finland", elec:0.080, gas:null, ratio:null },
   { country:"UK", elec:0.285, gas:0.067, ratio:4.28 },
   { country:"Czech Republic", elec:0.350, gas:0.107, ratio:3.27 },
-  { country:"USA", elec:0.150, gas:0.044, ratio:3.42 },
-  { country:"China", elec:0.067, gas:0.044, ratio:1.54 },
-  { country:"Japan", elec:0.195, gas:0.042, ratio:4.66 }
+  { country:"Belgium", elec:0.330, gas:0.120, ratio:2.75 },
+  { country:"Denmark", elec:0.290, gas:0.120, ratio:2.42 },
+  { country:"Austria", elec:0.280, gas:0.110, ratio:2.55 },
+  { country:"Switzerland", elec:0.270, gas:0.130, ratio:2.08 },
+  { country:"Luxembourg", elec:0.220, gas:0.080, ratio:2.75 },
+  { country:"Slovakia", elec:0.210, gas:0.065, ratio:3.23 },
+  { country:"Estonia", elec:0.195, gas:0.060, ratio:3.25 },
+  { country:"Latvia", elec:0.250, gas:0.055, ratio:4.55 },
+  { country:"Lithuania", elec:0.225, gas:0.060, ratio:3.75 },
+  { country:"Bulgaria", elec:0.115, gas:0.055, ratio:2.09 },
+  { country:"Croatia", elec:0.175, gas:0.055, ratio:3.18 },
+  { country:"Hungary", elec:0.110, gas:0.038, ratio:2.89 },
+  { country:"Romania", elec:0.175, gas:0.048, ratio:3.65 },
+  { country:"Serbia", elec:0.085, gas:0.042, ratio:2.02 },
+  { country:"Ukraine", elec:0.060, gas:0.035, ratio:1.71 },
+  { country:"Turkey", elec:0.090, gas:0.035, ratio:2.57 },
+  { country:"Portugal", elec:0.220, gas:0.110, ratio:2.00 },
+  { country:"Spain", elec:0.230, gas:0.095, ratio:2.42 }
 ];
 
 const marketData = [
@@ -1078,16 +1110,35 @@ const marketData = [
   { country:"Finland", sales:101, growth:-13.7, flag:"🇫🇮" },
   { country:"UK", sales:98, growth:56.0, flag:"🇬🇧" },
   { country:"Czech Republic", sales:20, growth:-64.0, flag:"🇨🇿" },
-  { country:"USA", sales:4122, growth:14.0, flag:"🇺🇸" },
-  { country:"China", sales:2200, growth:6.6, flag:"🇨🇳" },
-  { country:"Japan", sales:8500, growth:5.0, flag:"🇯🇵" }
+  { country:"Belgium", sales:50, growth:-52.0, flag:"🇧🇪" },
+  { country:"Denmark", sales:40, growth:-30.0, flag:"🇩🇰" },
+  { country:"Austria", sales:55, growth:0.1, flag:"🇦🇹" },
+  { country:"Switzerland", sales:35, growth:-30.0, flag:"🇨🇭" },
+  { country:"Luxembourg", sales:1, growth:0.0, flag:"🇱🇺" },
+  { country:"Slovakia", sales:10, growth:-16.0, flag:"🇸🇰" },
+  { country:"Estonia", sales:9, growth:-10.0, flag:"🇪🇪" },
+  { country:"Latvia", sales:4, growth:0.0, flag:"🇱🇻" },
+  { country:"Lithuania", sales:8, growth:-5.0, flag:"🇱🇹" },
+  { country:"Bulgaria", sales:8, growth:0.0, flag:"🇧🇬" },
+  { country:"Croatia", sales:8, growth:0.0, flag:"🇭🇷" },
+  { country:"Hungary", sales:18, growth:-15.0, flag:"🇭🇺" },
+  { country:"Romania", sales:10, growth:5.0, flag:"🇷🇴" },
+  { country:"Serbia", sales:4, growth:0.0, flag:"🇷🇸" },
+  { country:"Ukraine", sales:3, growth:0.0, flag:"🇺🇦" },
+  { country:"Turkey", sales:50, growth:10.0, flag:"🇹🇷" },
+  { country:"Portugal", sales:70, growth:15.0, flag:"🇵🇹" },
+  { country:"Spain", sales:220, growth:5.5, flag:"🇪🇸" }
 ];
 
 // ISO numeric codes for our countries (used in world-atlas TopoJSON)
 const countryISO = {
   250:"France", 276:"Germany", 380:"Italy", 528:"Netherlands",
   616:"Poland", 752:"Sweden", 578:"Norway", 246:"Finland",
-  826:"UK", 203:"Czech Republic", 840:"USA", 156:"China", 392:"Japan"
+  826:"UK", 203:"Czech Republic", 56:"Belgium", 208:"Denmark",
+  40:"Austria", 756:"Switzerland", 442:"Luxembourg", 703:"Slovakia",
+  233:"Estonia", 428:"Latvia", 440:"Lithuania", 100:"Bulgaria",
+  191:"Croatia", 348:"Hungary", 642:"Romania", 688:"Serbia",
+  804:"Ukraine", 792:"Turkey", 620:"Portugal", 724:"Spain"
 };
 
 const countryFlags = {};
@@ -1119,7 +1170,7 @@ function getCountryData() {
 const countryData = getCountryData();
 
 // ===== MAP =====
-const map = L.map('map', { scrollWheelZoom: true, zoomControl: true }).setView([30, 10], 2);
+const map = L.map('map', { scrollWheelZoom: true, zoomControl: true }).setView([50, 15], 4);
 
 // No base tile layer — pure GeoJSON choropleth with ocean background
 // Country labels added on top for context
@@ -1451,7 +1502,7 @@ new Chart(document.getElementById('chart-ratio'), {
   }
 });
 
-const salesEU = marketData.filter(m => !['USA','China','Japan'].includes(m.country)).sort((a, b) => b.sales - a.sales);
+const salesEU = [...marketData].sort((a, b) => b.sales - a.sales).slice(0, 15);
 new Chart(document.getElementById('chart-sales'), {
   type: 'bar',
   data: {
