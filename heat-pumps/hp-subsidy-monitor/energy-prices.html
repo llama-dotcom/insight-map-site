@@ -28,9 +28,9 @@ header .container{display:flex;justify-content:space-between;align-items:center;
 [data-theme="light"] .tabs{background:rgba(190,180,165,0.25);}
 .tab{padding:7px 18px;border-radius:8px;font-size:0.8rem;font-weight:500;color:var(--dim);cursor:pointer;border:none;background:none;transition:all 0.2s;display:flex;align-items:center;gap:6px;text-decoration:none;}
 .tab:hover{color:var(--text);}
-.tab.active{color:var(--text);background:rgba(56,189,248,0.15);}
-[data-theme="light"] .tab.active{background:rgba(0,102,179,0.1);}
-.scope-tag{font-size:0.68rem;color:var(--dim);background:rgba(100,116,139,0.12);padding:3px 8px;border-radius:5px;}
+.tab.active{color:var(--text);background:rgba(56,189,248,0.15);box-shadow:0 0 12px rgba(56,189,248,0.1);}
+[data-theme="light"] .tab.active{background:rgba(0,102,179,0.1);box-shadow:none;}
+.scope-tag{font-size:0.68rem;color:var(--dim);background:rgba(100,116,139,0.12);padding:3px 8px;border-radius:5px;letter-spacing:0.3px;}
 .theme-btn{background:var(--glass);border:1px solid var(--glass-b);border-radius:8px;padding:5px 10px;cursor:pointer;color:var(--dim);font-size:0.75rem;display:flex;align-items:center;gap:4px;}
 .theme-btn:hover{border-color:var(--accent);color:var(--text);}
 .updated{font-size:0.65rem;color:var(--dim);}
@@ -77,7 +77,7 @@ footer{text-align:center;padding:20px 0;border-top:1px solid var(--glass-b);colo
     </div>
     <div class="tabs">
       <a href="index.html" class="tab"><i data-lucide="layout-dashboard" style="width:14px;height:14px;"></i> Dashboard</a>
-      <a href="index.html#" class="tab" onclick="return false;"><i data-lucide="globe" style="width:14px;height:14px;"></i> Countries</a>
+      <a href="index.html" class="tab"><i data-lucide="globe" style="width:14px;height:14px;"></i> Countries</a>
       <a href="energy-prices.html" class="tab active"><i data-lucide="bolt" style="width:14px;height:14px;"></i> Electricity Prices</a>
       <a href="about.html" class="tab"><i data-lucide="info" style="width:14px;height:14px;"></i> About</a>
     </div>
