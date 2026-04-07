@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Energy Prices — HP Subsidy Monitor</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+:root{--bg:#070b16;--glass:rgba(20,30,52,0.45);--glass-b:rgba(80,100,140,0.18);--accent:#38bdf8;--green:#4ade80;--red:#f87171;--text:#e2e8f0;--muted:#94a3b8;--dim:#64748b;--radius:14px;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding:40px 20px;}
+.container{max-width:1000px;margin:0 auto;}
+a{color:var(--accent);text-decoration:none;}
+h1{font-size:1.6rem;font-weight:700;color:white;margin-bottom:6px;}
+.sub{font-size:0.82rem;color:var(--dim);margin-bottom:24px;}
+.back{display:inline-block;margin-bottom:20px;font-size:0.82rem;color:var(--dim);}
+.gc{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--glass-b);border-radius:var(--radius);padding:20px;margin-bottom:14px;}
+select{padding:8px 14px;border:1px solid var(--glass-b);border-radius:8px;background:var(--glass);color:var(--text);font-size:0.85rem;min-width:180px;margin-bottom:16px;}
+select:focus{outline:none;border-color:var(--accent);}
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.chart-box{padding:16px;}
+.chart-box h3{font-size:0.85rem;color:var(--muted);margin-bottom:10px;}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.stat{text-align:center;padding:12px;}
+.stat-l{font-size:0.64rem;color:var(--dim);text-transform:uppercase;letter-spacing:0.8px;}
+.stat-v{font-size:1.3rem;font-weight:700;font-family:Menlo,Consolas,monospace;color:white;margin:2px 0;}
+footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid var(--glass-b);font-size:0.7rem;color:var(--dim);}
+@media(max-width:768px){.chart-row{grid-template-columns:1fr;}.stats-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<a href="index.html" class="back">← Back to Dashboard</a>
+<h1><i data-lucide="bolt" style="width:22px;height:22px;color:var(--accent);display:inline;vertical-align:middle;"></i> Energy Prices</h1>
+<p class="sub">Residential electricity and gas prices across Europe. 5-year history (2020–2025). Source: Eurostat.</p>
+
+<label style="font-size:0.82rem;color:var(--muted);margin-right:8px;">Select country:</label>
+<select id="country-sel" onchange="updateCharts()"></select>
+
+<div class="stats-row" id="stats"></div>
+
+<div class="chart-row">
+  <div class="gc chart-box">
+    <h3>Electricity Price (€/kWh) — 5 Year History</h3>
+    <canvas id="elec-chart"></canvas>
+  </div>
+  <div class="gc chart-box">
+    <h3>Gas Price (€/kWh) — 5 Year History</h3>
+    <canvas id="gas-chart"></canvas>
+  </div>
+</div>
+
+<div class="gc" style="margin-top:14px;">
+  <h3 style="font-size:0.85rem;color:var(--muted);margin-bottom:10px;">All Countries — Current Prices</h3>
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:0.78rem;" id="price-table">
+      <thead><tr style="border-bottom:1px solid var(--glass-b);">
+        <th style="padding:8px;text-align:left;color:var(--dim);font-size:0.66rem;text-transform:uppercase;cursor:pointer;" onclick="sortPT(0)">Country</th>
+        <th style="padding:8px;text-align:left;color:var(--dim);font-size:0.66rem;text-transform:uppercase;cursor:pointer;" onclick="sortPT(1)">Electricity</th>
+        <th style="padding:8px;text-align:left;color:var(--dim);font-size:0.66rem;text-transform:uppercase;cursor:pointer;" onclick="sortPT(2)">Gas</th>
+        <th style="padding:8px;text-align:left;color:var(--dim);font-size:0.66rem;text-transform:uppercase;cursor:pointer;" onclick="sortPT(3)">Ratio</th>
+      </tr></thead>
+      <tbody id="pt-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<footer>
+  <p>HP Subsidy Monitor · <a href="index.html">Dashboard</a> · <a href="about.html">About</a> · Source: Eurostat H1 2025, Ofgem, GlobalPetrolPrices</p>
+  <p style="margin-top:4px;"><a href="/impressum.html">Impressum</a> · <a href="/datenschutz.html">Datenschutz</a></p>
+</footer>
+</div>
+
+<script>
+const P=[
+  {n:"Germany",f:"🇩🇪",e:0.384,ga:0.122,h:[{y:2020,e:0.301,g:0.061},{y:2021,e:0.319,g:0.064},{y:2022,e:0.346,g:0.114},{y:2023,e:0.417,g:0.123},{y:2024,e:0.394,g:0.122},{y:2025,e:0.384,g:0.122}]},
+  {n:"France",f:"🇫🇷",e:0.266,ga:0.130,h:[{y:2020,e:0.190,g:0.079},{y:2021,e:0.193,g:0.078},{y:2022,e:0.212,g:0.108},{y:2023,e:0.232,g:0.119},{y:2024,e:0.280,g:0.126},{y:2025,e:0.266,g:0.130}]},
+  {n:"Netherlands",f:"🇳🇱",e:0.290,ga:0.162,h:[{y:2020,e:0.127,g:0.101},{y:2021,e:0.119,g:0.107},{y:2022,e:0.201,g:0.174},{y:2023,e:0.370,g:0.171},{y:2024,e:0.310,g:0.158},{y:2025,e:0.290,g:0.162}]},
+  {n:"UK",f:"🇬🇧",e:0.285,ga:0.067,h:[{y:2020,e:0.208,g:0.045},{y:2021,e:0.228,g:0.048},{y:2022,e:0.340,g:0.103},{y:2023,e:0.340,g:0.103},{y:2024,e:0.281,g:0.069},{y:2025,e:0.285,g:0.067}]},
+  {n:"Italy",f:"🇮🇹",e:0.329,ga:0.124,h:[{y:2020,e:0.222,g:0.090},{y:2021,e:0.229,g:0.084},{y:2022,e:0.322,g:0.132},{y:2023,e:0.338,g:0.117},{y:2024,e:0.295,g:0.120},{y:2025,e:0.329,g:0.124}]},
+  {n:"Spain",f:"🇪🇸",e:0.230,ga:0.095,h:[{y:2020,e:0.210,g:0.075},{y:2021,e:0.225,g:0.075},{y:2022,e:0.280,g:0.110},{y:2023,e:0.260,g:0.100},{y:2024,e:0.240,g:0.098},{y:2025,e:0.230,g:0.095}]},
+  {n:"Poland",f:"🇵🇱",e:0.256,ga:0.050,h:[{y:2020,e:0.139,g:0.040},{y:2021,e:0.140,g:0.038},{y:2022,e:0.158,g:0.047},{y:2023,e:0.184,g:0.052},{y:2024,e:0.213,g:0.049},{y:2025,e:0.256,g:0.050}]},
+  {n:"Austria",f:"🇦🇹",e:0.280,ga:0.110,h:[{y:2020,e:0.210,g:0.068},{y:2021,e:0.215,g:0.070},{y:2022,e:0.270,g:0.120},{y:2023,e:0.330,g:0.130},{y:2024,e:0.300,g:0.115},{y:2025,e:0.280,g:0.110}]},
+  {n:"Belgium",f:"🇧🇪",e:0.330,ga:0.120,h:[{y:2020,e:0.280,g:0.055},{y:2021,e:0.285,g:0.057},{y:2022,e:0.350,g:0.110},{y:2023,e:0.380,g:0.130},{y:2024,e:0.345,g:0.125},{y:2025,e:0.330,g:0.120}]},
+  {n:"Sweden",f:"🇸🇪",e:0.096,ga:0.213,h:[{y:2020,e:0.199,g:0.098},{y:2021,e:0.209,g:0.128},{y:2022,e:0.238,g:0.191},{y:2023,e:0.154,g:0.178},{y:2024,e:0.110,g:0.176},{y:2025,e:0.096,g:0.213}]},
+  {n:"Denmark",f:"🇩🇰",e:0.290,ga:0.120,h:[{y:2020,e:0.280,g:0.090},{y:2021,e:0.290,g:0.095},{y:2022,e:0.350,g:0.140},{y:2023,e:0.310,g:0.125},{y:2024,e:0.295,g:0.122},{y:2025,e:0.290,g:0.120}]},
+  {n:"Finland",f:"🇫🇮",e:0.080,ga:null,h:[{y:2020,e:0.173,g:null},{y:2021,e:0.175,g:null},{y:2022,e:0.201,g:null},{y:2023,e:0.137,g:null},{y:2024,e:0.089,g:null},{y:2025,e:0.080,g:null}]},
+  {n:"Switzerland",f:"🇨🇭",e:0.270,ga:0.130,h:[{y:2020,e:0.210,g:0.100},{y:2021,e:0.215,g:0.105},{y:2022,e:0.250,g:0.140},{y:2023,e:0.280,g:0.140},{y:2024,e:0.275,g:0.135},{y:2025,e:0.270,g:0.130}]},
+  {n:"Czech Republic",f:"🇨🇿",e:0.350,ga:0.107,h:[{y:2020,e:0.205,g:0.050},{y:2021,e:0.210,g:0.052},{y:2022,e:0.283,g:0.112},{y:2023,e:0.352,g:0.131},{y:2024,e:0.340,g:0.120},{y:2025,e:0.350,g:0.107}]}
+];
+
+// Populate select
+const sel=document.getElementById('country-sel');
+P.forEach(c=>{const o=document.createElement('option');o.value=c.n;o.textContent=c.f+' '+c.n;sel.appendChild(o);});
+
+let elecChart,gasChart;
+const chartOpts={responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(51,65,85,0.2)'},ticks:{color:'#64748b',font:{size:11}}},y:{grid:{color:'rgba(51,65,85,0.2)'},ticks:{color:'#64748b',font:{size:11},callback:v=>'€'+v.toFixed(2)}}}};
+
+function updateCharts(){
+  const c=P.find(p=>p.n===sel.value);if(!c)return;
+  const labels=c.h.map(h=>h.y.toString());
+  const elecData=c.h.map(h=>h.e);
+  const gasData=c.h.map(h=>h.g);
+  const ratio=c.ga?c.e/c.ga:null;
+
+  // Stats
+  document.getElementById('stats').innerHTML=`
+    <div class="gc stat"><div class="stat-l">Electricity (2025)</div><div class="stat-v" style="color:var(--accent);">€${c.e.toFixed(3)}</div><div style="font-size:0.7rem;color:var(--dim);">per kWh</div></div>
+    <div class="gc stat"><div class="stat-l">Gas (2025)</div><div class="stat-v" style="color:var(--green);">${c.ga?'€'+c.ga.toFixed(3):'N/A'}</div><div style="font-size:0.7rem;color:var(--dim);">per kWh</div></div>
+    <div class="gc stat"><div class="stat-l">Ratio (Elec/Gas)</div><div class="stat-v" style="color:${ratio&&ratio>3.5?'var(--red)':ratio&&ratio>2.5?'var(--yellow)':'var(--green)'}">${ratio?ratio.toFixed(2)+'x':'N/A'}</div><div style="font-size:0.7rem;color:var(--dim);">${ratio&&ratio<3?'Favorable for HP':'High ratio'}</div></div>`;
+
+  // Charts
+  if(elecChart)elecChart.destroy();
+  if(gasChart)gasChart.destroy();
+
+  elecChart=new Chart(document.getElementById('elec-chart'),{type:'line',data:{labels,datasets:[{data:elecData,borderColor:'#38bdf8',backgroundColor:'rgba(56,189,248,0.1)',fill:true,tension:0.3,borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#38bdf8'}]},options:chartOpts});
+
+  if(gasData[0]!==null){
+    gasChart=new Chart(document.getElementById('gas-chart'),{type:'line',data:{labels,datasets:[{data:gasData,borderColor:'#fb923c',backgroundColor:'rgba(251,146,60,0.1)',fill:true,tension:0.3,borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#fb923c'}]},options:chartOpts});
+  } else {
+    document.getElementById('gas-chart').parentElement.innerHTML='<h3 style="font-size:0.85rem;color:var(--muted);">Gas Price</h3><div style="padding:40px;text-align:center;color:var(--dim);">Gas not used for residential heating in this country.</div>';
+  }
+}
+
+// Price table
+function renderPT(){
+  const all=[...P].sort((a,b)=>b.e-a.e);
+  document.getElementById('pt-body').innerHTML=all.map(c=>{
+    const r=c.ga?c.e/c.ga:null;
+    const rc=r?r>3.5?'color:var(--red)':r>2.5?'color:var(--yellow)':'color:var(--green)':'';
+    return`<tr style="border-bottom:1px solid rgba(51,65,85,0.2);cursor:pointer;" onclick="document.getElementById('country-sel').value='${c.n}';updateCharts();window.scrollTo({top:0,behavior:'smooth'});">
+      <td style="padding:6px 8px;font-weight:500;">${c.f} ${c.n}</td>
+      <td style="padding:6px 8px;font-family:Menlo,Consolas,monospace;">€${c.e.toFixed(3)}</td>
+      <td style="padding:6px 8px;font-family:Menlo,Consolas,monospace;">${c.ga?'€'+c.ga.toFixed(3):'N/A'}</td>
+      <td style="padding:6px 8px;font-family:Menlo,Consolas,monospace;${rc}">${r?r.toFixed(2)+'x':'N/A'}</td>
+    </tr>`;
+  }).join('');
+}
+renderPT();
+
+// Sort
+let ptSc=-1,ptSa=true;
+function sortPT(col){
+  const tb=document.getElementById('pt-body');const rows=[...tb.querySelectorAll('tr')];
+  if(ptSc===col)ptSa=!ptSa;else{ptSc=col;ptSa=true;}
+  rows.sort((a,b)=>{let av=a.cells[col].textContent.trim(),bv=b.cells[col].textContent.trim();
+    if(col>0){av=parseFloat(av.replace(/[^0-9.]/g,'')||0);bv=parseFloat(bv.replace(/[^0-9.]/g,'')||0);return ptSa?av-bv:bv-av;}
+    return ptSa?av.localeCompare(bv):bv.localeCompare(av);});
+  rows.forEach(r=>tb.appendChild(r));
+}
+
+updateCharts();
+lucide.createIcons();
+</script>
+</body>
+</html>

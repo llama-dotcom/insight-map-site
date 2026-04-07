@@ -163,6 +163,9 @@ footer{text-align:center;padding:20px 0;border-top:1px solid var(--glass-b);colo
       <button class="tab active" onclick="showP('dash',this)"><i data-lucide="layout-dashboard" style="width:14px;height:14px;"></i> Dashboard</button>
       <button class="tab" onclick="showP('countries',this)"><i data-lucide="globe" style="width:14px;height:14px;"></i> Countries</button>
       <button class="tab" onclick="showP('sources',this)"><i data-lucide="book-open" style="width:14px;height:14px;"></i> Sources</button>
+      <a href="compare.html" class="tab" style="text-decoration:none;"><i data-lucide="git-compare" style="width:14px;height:14px;"></i> Compare</a>
+      <a href="energy-prices.html" class="tab" style="text-decoration:none;"><i data-lucide="bolt" style="width:14px;height:14px;"></i> Prices</a>
+      <a href="about.html" class="tab" style="text-decoration:none;"><i data-lucide="info" style="width:14px;height:14px;"></i> About</a>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <span class="scope-tag">AW · LW · EW · Hybrids</span>
@@ -201,7 +204,10 @@ footer{text-align:center;padding:20px 0;border-top:1px solid var(--glass-b);colo
 
 <!-- Subsidy Table -->
 <section style="padding:8px 0 14px;">
-  <div style="font-size:0.95rem;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:7px;"><i data-lucide="table" style="width:17px;height:17px;color:var(--accent);"></i> Subsidy Programs</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+    <div style="font-size:0.95rem;font-weight:600;display:flex;align-items:center;gap:7px;"><i data-lucide="table" style="width:17px;height:17px;color:var(--accent);"></i> Subsidy Programs</div>
+    <input type="text" id="tbl-search" placeholder="Search country..." oninput="filterT()" style="padding:6px 12px;border:1px solid var(--glass-b);border-radius:7px;background:var(--glass);color:var(--text);font-size:0.78rem;width:200px;">
+  </div>
   <div class="tbl-w">
     <table><thead><tr>
       <th onclick="sortT(0)">Country</th>
@@ -271,7 +277,31 @@ footer{text-align:center;padding:20px 0;border-top:1px solid var(--glass-b);colo
 
     <div class="gc meth-card">
       <h3><i data-lucide="shield-check" style="width:16px;height:16px;color:var(--accent);"></i> Subsidy Sources</h3>
-      <p>Official source links for each country are provided in the subsidy table (Source column) and in each country profile. All programs verified against national government portals.</p>
+      <div class="src-list">
+        🇩🇪 <a href="https://www.kfw.de" target="_blank">Germany — BEG/KfW 458</a><br>
+        🇫🇷 <a href="https://www.service-public.gouv.fr/particuliers/vosdroits/F35083" target="_blank">France — MaPrimeRénov'</a><br>
+        🇳🇱 <a href="https://www.rvo.nl/subsidies-financiering/isde" target="_blank">Netherlands — ISDE</a><br>
+        🇬🇧 <a href="https://www.gov.uk/apply-boiler-upgrade-scheme" target="_blank">UK — Boiler Upgrade Scheme</a><br>
+        🇮🇹 <a href="https://www.gse.it/servizi-per-te/conto-termico" target="_blank">Italy — Conto Termico 3.0</a><br>
+        🇵🇱 <a href="https://czystepowietrze.gov.pl/" target="_blank">Poland — Czyste Powietrze</a><br>
+        🇪🇸 <a href="https://www.idae.es/" target="_blank">Spain — PRTR/IDAE</a><br>
+        🇦🇹 <a href="https://www.sanierungsoffensive.gv.at/" target="_blank">Austria — Sanierungsoffensive</a><br>
+        🇧🇪 <a href="https://www.vlaanderen.be/" target="_blank">Belgium — Regional Premiums</a><br>
+        🇨🇭 <a href="https://www.dasgebaeudeprogramm.ch/" target="_blank">Switzerland — Gebäudeprogramm</a><br>
+        🇨🇿 <a href="https://novazelenausporam.cz/" target="_blank">Czech Republic — Nová Zelená Úsporám</a><br>
+        🇩🇰 <a href="https://ens.dk/" target="_blank">Denmark — Varmepumpepuljen</a><br>
+        🇫🇮 <a href="https://www.ara.fi/en" target="_blank">Finland — ARA Energy Grant</a><br>
+        🇮🇪 <a href="https://www.seai.ie/grants/home-energy-grants/heat-pump-systems/" target="_blank">Ireland — SEAI HP Grant</a><br>
+        🇱🇺 <a href="https://guichet.public.lu/" target="_blank">Luxembourg — Klimabonus</a><br>
+        🇵🇹 <a href="https://elar.pfrr.gov.pt/" target="_blank">Portugal — E-Lar (PRR)</a><br>
+        🇭🇺 <a href="https://www.palyazat.gov.hu/" target="_blank">Hungary — Rural HP / KEHOP</a><br>
+        🇷🇴 <a href="https://www.afm.ro/" target="_blank">Romania — Casa Verde Plus</a><br>
+        🇸🇰 <a href="https://zelenadomacnostiam.sk/" target="_blank">Slovakia — Zelená domácnostiam</a><br>
+        🇸🇮 <a href="https://www.ekosklad.si/" target="_blank">Slovenia — Eco Fund</a><br>
+        🇬🇷 <a href="https://exoikonomo2023.gov.gr/" target="_blank">Greece — Exoikonomo</a><br>
+        🇺🇦 <a href="https://ebrdgeff.com/" target="_blank">Ukraine — IQ Energy (EBRD)</a><br>
+        ‣ <a href="https://ehpa.org/wp-content/uploads/2025/11/Subsidies-for-residential-heat-pumps-in-Europe-1.pdf" target="_blank">EHPA — Subsidies Overview 2025 (PDF)</a>
+      </div>
     </div>
   </div>
 </div>
@@ -420,11 +450,11 @@ function renderT(){
     const tech=c.det.toLowerCase().includes('hybrid')?'<span class="t-hy">HP+Hybrid</span>':'<span class="t-hp">HP</span>';
     const sn=c.sl?c.sl.replace(/https?:\/\/(www\.)?/,'').split('/')[0].split('.').slice(-2,-1)[0]:'—';
     const lk=c.sl?`<a href="${c.sl}" target="_blank" style="font-size:0.68rem;">${sn} →</a>`:'—';
-    const a2a=c.a2a?'<span class="a2a-tag"> incl.A2A</span>':'';
+    const bar=c.ms>0?`<div style="width:${Math.min(c.ms/24000*100,100)}%;height:3px;background:var(--green);border-radius:2px;margin-top:2px;"></div>`:'';
     return`<tr onclick="openM('${c.n}')" style="cursor:pointer;">
-      <td style="font-weight:500;">${c.f} ${c.n}${a2a}</td>
+      <td style="font-weight:500;">${c.f} ${c.n}</td>
       <td>${c.sp}</td><td>${ty}</td>
-      <td style="font-family:Menlo,Consolas,monospace;font-weight:600;color:var(--green);">€${c.ms.toLocaleString()}</td>
+      <td><div style="font-family:Menlo,Consolas,monospace;font-weight:600;color:var(--green);">€${c.ms.toLocaleString()}</div>${bar}</td>
       <td>${tech}</td><td><span class="${stC}">${c.st}</span></td><td>${lk}</td></tr>`;
   }).join('');
 }
@@ -437,6 +467,10 @@ function sortT(col){
   rows.forEach(r=>tb.appendChild(r));
 }
 renderT();
+function filterT(){
+  const q=document.getElementById('tbl-search').value.toLowerCase();
+  document.querySelectorAll('#tbl tr').forEach(r=>{r.style.display=r.cells[0].textContent.toLowerCase().includes(q)?'':'none';});
+}
 
 // === NEWS ===
 document.getElementById('news').innerHTML=NEWS.map(n=>{
@@ -450,16 +484,16 @@ function renderCG(f){
   const fl=f?C.filter(c=>c.n.toLowerCase().includes(f.toLowerCase())):C;
   const s=[...fl].sort((a,b)=>b.s-a.s);
   document.getElementById('c-grid').innerHTML=s.map(c=>{
-    const gs=c.ga?`€${c.ga.toFixed(3)}`:'N/A';
-    const a2a=c.a2a?' <span class="a2a-tag">incl.A2A</span>':'';
+    const mkt=c.s>0?`${c.s}k units (${c.yr})`:'N/A';
+    const nsubs=1;// each country has 1 main program in our data
     return`<div class="gc c-card" onclick="openM('${c.n}')">
-      <div class="c-hd"><span class="c-nm">${c.f} ${c.n}</span><span class="c-mk">${c.s}k${a2a}</span></div>
-      <div class="c-sub">${c.sp}: €${c.ms.toLocaleString()}</div>
-      <div class="c-row"><span style="color:var(--muted)">Electricity</span><span>€${c.e.toFixed(3)}/kWh</span></div>
-      <div class="c-row"><span style="color:var(--muted)">Gas</span><span>${gs}</span></div>
-      ${c.pen!=='N/A'?`<div class="c-row"><span style="color:var(--muted)">HP penetration</span><span>${c.pen}/1000 hh</span></div>`:''}
-      <div class="c-row"><span style="color:var(--muted)">Status</span><span style="color:${c.st==='active'?'var(--green)':c.st==='expiring'?'var(--yellow)':'var(--dim)'}">${c.st}</span></div>
-      <div class="c-row"><span style="color:var(--muted)">Source</span><span style="font-size:0.72rem;">${c.src}</span></div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:1.4rem;">${c.f}</span>
+        <div style="flex:1;">
+          <div style="font-weight:600;color:white;font-size:0.9rem;">${c.n}</div>
+          <div style="font-size:0.72rem;color:var(--muted);">${mkt}${c.a2a&&c.s>0?' <span class="a2a-tag">incl.A2A</span>':''} · ${nsubs} subsid${nsubs>1?'ies':'y'}</div>
+        </div>
+      </div>
     </div>`;
   }).join('');
 }
@@ -481,7 +515,7 @@ function openM(nm){
   h+=`<div class="m-rw"><span style="color:var(--muted)">Gas</span><span>${gs}</span></div>`;
   h+=`<div class="m-rw"><span style="color:var(--muted)">Ratio</span><span style="color:${c.r&&c.r>3.5?'var(--red)':c.r&&c.r>2.5?'var(--yellow)':'var(--green)'}">${rs}</span></div>`;
   h+=`<div class="m-rw"><span style="color:var(--muted)">Market${c.yr?' ('+c.yr+')':''}</span><span>${c.s>0?c.s+'k units':'N/A'}${c.a2a&&c.s>0?' <span class="a2a-tag">incl.A2A</span>':''}</span></div>`;
-  if(c.pen!=='N/A')h+=`<div class="m-rw"><span style="color:var(--muted)">HP penetration</span><span>${c.pen} / 1,000 households</span></div>`;
+  if(c.pen!=='N/A')h+=`<div class="m-rw"><span style="color:var(--muted)">HP penetration</span><span>${c.pen} / 1,000 hh</span></div><div style="font-size:0.68rem;color:var(--dim);padding:2px 0;">Calc: estimated installed base ÷ total households × 1,000. Source: EHPA/national data.</div>`;
   h+=`<div class="m-rw"><span style="color:var(--muted)">Data source</span><span style="font-size:0.78rem;">${c.src}</span></div></div>`;
   if(cn.length){
     h+=`<div class="m-s"><h3><i data-lucide="radio-tower" style="width:14px;height:14px;"></i> Policy Changes</h3>`;
