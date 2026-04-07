@@ -32,7 +32,12 @@ footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid v
 <body>
 <div class="container">
 
-<a href="index.html" class="back">← Back to Dashboard</a>
+<nav style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+  <a href="index.html" style="padding:5px 12px;border-radius:6px;font-size:0.78rem;color:var(--dim);background:rgba(30,41,59,0.3);text-decoration:none;">Dashboard</a>
+  <a href="compare.html" style="padding:5px 12px;border-radius:6px;font-size:0.78rem;color:var(--dim);background:rgba(30,41,59,0.3);text-decoration:none;">Compare</a>
+  <a href="energy-prices.html" style="padding:5px 12px;border-radius:6px;font-size:0.78rem;color:white;background:rgba(56,189,248,0.15);text-decoration:none;">Prices</a>
+  <a href="about.html" style="padding:5px 12px;border-radius:6px;font-size:0.78rem;color:var(--dim);background:rgba(30,41,59,0.3);text-decoration:none;">About</a>
+</nav>
 <h1><i data-lucide="bolt" style="width:22px;height:22px;color:var(--accent);display:inline;vertical-align:middle;"></i> Energy Prices</h1>
 <p class="sub">Residential electricity and gas prices across Europe. 5-year history (2020–2025). Source: Eurostat.</p>
 
@@ -41,15 +46,9 @@ footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid v
 
 <div class="stats-row" id="stats"></div>
 
-<div class="chart-row">
-  <div class="gc chart-box">
-    <h3>Electricity Price (€/kWh) — 5 Year History</h3>
-    <canvas id="elec-chart"></canvas>
-  </div>
-  <div class="gc chart-box">
-    <h3>Gas Price (€/kWh) — 5 Year History</h3>
-    <canvas id="gas-chart"></canvas>
-  </div>
+<div class="gc" style="padding:20px;">
+  <h3 style="font-size:0.88rem;color:var(--muted);margin-bottom:12px;">Electricity & Gas Price — 5 Year History (€/kWh)</h3>
+  <canvas id="combo-chart" height="180"></canvas>
 </div>
 
 <div class="gc" style="margin-top:14px;">
@@ -95,8 +94,8 @@ const P=[
 const sel=document.getElementById('country-sel');
 P.forEach(c=>{const o=document.createElement('option');o.value=c.n;o.textContent=c.f+' '+c.n;sel.appendChild(o);});
 
-let elecChart,gasChart;
-const chartOpts={responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(51,65,85,0.2)'},ticks:{color:'#64748b',font:{size:11}}},y:{grid:{color:'rgba(51,65,85,0.2)'},ticks:{color:'#64748b',font:{size:11},callback:v=>'€'+v.toFixed(2)}}}};
+let comboChart;
+const chartOpts={responsive:true,plugins:{legend:{labels:{color:'#94a3b8',font:{size:12},usePointStyle:true}}},scales:{x:{grid:{color:'rgba(51,65,85,0.2)'},ticks:{color:'#64748b',font:{size:11}}},y:{grid:{color:'rgba(51,65,85,0.2)'},ticks:{color:'#64748b',font:{size:11},callback:v=>'€'+v.toFixed(2)},min:0}}};
 
 function updateCharts(){
   const c=P.find(p=>p.n===sel.value);if(!c)return;
@@ -105,23 +104,15 @@ function updateCharts(){
   const gasData=c.h.map(h=>h.g);
   const ratio=c.ga?c.e/c.ga:null;
 
-  // Stats
   document.getElementById('stats').innerHTML=`
     <div class="gc stat"><div class="stat-l">Electricity (2025)</div><div class="stat-v" style="color:var(--accent);">€${c.e.toFixed(3)}</div><div style="font-size:0.7rem;color:var(--dim);">per kWh</div></div>
     <div class="gc stat"><div class="stat-l">Gas (2025)</div><div class="stat-v" style="color:var(--green);">${c.ga?'€'+c.ga.toFixed(3):'N/A'}</div><div style="font-size:0.7rem;color:var(--dim);">per kWh</div></div>
     <div class="gc stat"><div class="stat-l">Ratio (Elec/Gas)</div><div class="stat-v" style="color:${ratio&&ratio>3.5?'var(--red)':ratio&&ratio>2.5?'var(--yellow)':'var(--green)'}">${ratio?ratio.toFixed(2)+'x':'N/A'}</div><div style="font-size:0.7rem;color:var(--dim);">${ratio&&ratio<3?'Favorable for HP':'High ratio'}</div></div>`;
 
-  // Charts
-  if(elecChart)elecChart.destroy();
-  if(gasChart)gasChart.destroy();
-
-  elecChart=new Chart(document.getElementById('elec-chart'),{type:'line',data:{labels,datasets:[{data:elecData,borderColor:'#38bdf8',backgroundColor:'rgba(56,189,248,0.1)',fill:true,tension:0.3,borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#38bdf8'}]},options:chartOpts});
-
-  if(gasData[0]!==null){
-    gasChart=new Chart(document.getElementById('gas-chart'),{type:'line',data:{labels,datasets:[{data:gasData,borderColor:'#fb923c',backgroundColor:'rgba(251,146,60,0.1)',fill:true,tension:0.3,borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#fb923c'}]},options:chartOpts});
-  } else {
-    document.getElementById('gas-chart').parentElement.innerHTML='<h3 style="font-size:0.85rem;color:var(--muted);">Gas Price</h3><div style="padding:40px;text-align:center;color:var(--dim);">Gas not used for residential heating in this country.</div>';
-  }
+  if(comboChart)comboChart.destroy();
+  const datasets=[{label:'Electricity',data:elecData,borderColor:'#38bdf8',backgroundColor:'rgba(56,189,248,0.08)',fill:true,tension:0.3,borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#38bdf8'}];
+  if(gasData[0]!==null)datasets.push({label:'Gas',data:gasData,borderColor:'#fb923c',backgroundColor:'rgba(251,146,60,0.08)',fill:true,tension:0.3,borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#fb923c'});
+  comboChart=new Chart(document.getElementById('combo-chart'),{type:'line',data:{labels,datasets},options:chartOpts});
 }
 
 // Price table

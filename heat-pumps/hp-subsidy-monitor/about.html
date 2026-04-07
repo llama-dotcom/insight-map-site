@@ -33,7 +33,13 @@ footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid v
 <body>
 <div class="container">
 
-<a href="index.html" class="back">← Back to Dashboard</a>
+<nav style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+  <a href="index.html" style="padding:5px 12px;border-radius:6px;font-size:0.78rem;color:var(--dim);background:rgba(30,41,59,0.3);text-decoration:none;">Dashboard</a>
+  <a href="index.html#" onclick="return false;" style="padding:5px 12px;border-radius:6px;font-size:0.78rem;color:var(--dim);background:rgba(30,41,59,0.3);text-decoration:none;">Countries</a>
+  <a href="compare.html" style="padding:5px 12px;border-radius:6px;font-size:0.78rem;color:var(--dim);background:rgba(30,41,59,0.3);text-decoration:none;">Compare</a>
+  <a href="energy-prices.html" style="padding:5px 12px;border-radius:6px;font-size:0.78rem;color:var(--dim);background:rgba(30,41,59,0.3);text-decoration:none;">Prices</a>
+  <a href="about.html" style="padding:5px 12px;border-radius:6px;font-size:0.78rem;color:white;background:rgba(56,189,248,0.15);text-decoration:none;">About</a>
+</nav>
 
 <h1>About HP Subsidy Monitor</h1>
 <p class="sub">A comprehensive dashboard tracking heat pump subsidies, energy prices, and market data across 29 European countries.</p>
@@ -92,15 +98,49 @@ footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid v
   <p><strong>Subsidies:</strong> Verified against official government portals. Maximum available subsidy amount shown (may require meeting all conditions). Programs marked as "active", "expiring", or "announced".</p>
 </div>
 
-<h2><i data-lucide="shield-check" style="width:18px;height:18px;color:var(--accent);"></i> Data Quality & Transparency</h2>
+<h2><i data-lucide="link" style="width:18px;height:18px;color:var(--accent);"></i> Energy Price Sources</h2>
 <div class="gc">
-  <ul>
-    <li>Every data point has a named source</li>
-    <li>Countries where A2A cannot be excluded are marked "incl. A2A"</li>
-    <li>Countries with no reliable unit data show "N/A" instead of estimates</li>
-    <li>All subsidy programs link to official government pages</li>
-    <li>Methodology and sources are publicly documented</li>
-  </ul>
+  <div style="font-size:0.82rem;line-height:2.1;">
+    🇪🇺 <a href="https://ec.europa.eu/eurostat/web/energy/database" target="_blank">Eurostat — EU Electricity & Gas Prices H1 2025</a><br>
+    🇬🇧 <a href="https://www.ofgem.gov.uk/" target="_blank">Ofgem — UK Energy Price Cap</a><br>
+    ‣ <a href="https://www.globalpetrolprices.com/" target="_blank">GlobalPetrolPrices — Non-EU countries</a>
+  </div>
+</div>
+
+<h2><i data-lucide="bar-chart-3" style="width:18px;height:18px;color:var(--accent);"></i> Market Data Sources</h2>
+<div class="gc">
+  <div style="font-size:0.82rem;line-height:2.1;">
+    ‣ <a href="https://www.ehpa.org/market-data/" target="_blank">EHPA — European HP Market Report 2025</a><br>
+    ‣ <a href="https://www.iea.org/energy-system/buildings/heat-pumps" target="_blank">IEA — Heat Pump Tracker</a><br>
+    🇩🇪 <a href="https://www.waermepumpe.de/presse/" target="_blank">BWP — German HP Association (hydronic only)</a><br>
+    🇫🇷 <a href="https://www.uniclima.fr/" target="_blank">Uniclima — French HP data (A2W only)</a><br>
+    🇫🇮 <a href="https://www.sulpu.fi/en/" target="_blank">SULPU — Finnish HP Association (by type)</a><br>
+    🇳🇱 <a href="https://warmte-pompen.nl/" target="_blank">VWP — Dutch HP Association (excl. A2A)</a><br>
+    🇬🇧 <a href="https://www.mcscertified.com/" target="_blank">MCS/HPA — UK Certified Installations</a><br>
+    🇵🇱 <a href="https://portpc.pl/" target="_blank">PORT PC — Polish HP Association (A2W)</a><br>
+    🇦🇹 <a href="https://www.waermepumpe-austria.at/" target="_blank">WPA — Austrian HP Association</a><br>
+    🇩🇰 <a href="https://varmepumpeindustrien.dk/" target="_blank">VPI — Danish HP Industry</a><br>
+    🇨🇭 <a href="https://www.fws.ch/statistiken/" target="_blank">FWS — Swiss HP Association</a><br>
+    ‣ <a href="https://www.cleanenergywire.org" target="_blank">Clean Energy Wire — Policy Analysis</a>
+  </div>
+</div>
+
+<h2><i data-lucide="shield-check" style="width:18px;height:18px;color:var(--accent);"></i> Subsidy Sources</h2>
+<div class="gc">
+  <div style="font-size:0.82rem;line-height:2.1;">
+    🇩🇪 <a href="https://www.kfw.de" target="_blank">Germany — BEG/KfW 458</a><br>
+    🇫🇷 <a href="https://www.service-public.gouv.fr/particuliers/vosdroits/F35083" target="_blank">France — MaPrimeRénov'</a><br>
+    🇳🇱 <a href="https://www.rvo.nl/subsidies-financiering/isde" target="_blank">Netherlands — ISDE</a><br>
+    🇬🇧 <a href="https://www.gov.uk/apply-boiler-upgrade-scheme" target="_blank">UK — Boiler Upgrade Scheme</a><br>
+    🇮🇹 <a href="https://www.gse.it/servizi-per-te/conto-termico" target="_blank">Italy — Conto Termico 3.0</a><br>
+    🇵🇱 <a href="https://czystepowietrze.gov.pl/" target="_blank">Poland — Czyste Powietrze</a><br>
+    🇪🇸 <a href="https://www.idae.es/" target="_blank">Spain — PRTR/IDAE</a><br>
+    🇦🇹 <a href="https://www.sanierungsoffensive.gv.at/" target="_blank">Austria — Sanierungsoffensive</a><br>
+    🇨🇭 <a href="https://www.dasgebaeudeprogramm.ch/" target="_blank">Switzerland — Gebäudeprogramm</a><br>
+    🇱🇺 <a href="https://guichet.public.lu/" target="_blank">Luxembourg — Klimabonus</a><br>
+    ‣ <a href="https://ehpa.org/wp-content/uploads/2025/11/Subsidies-for-residential-heat-pumps-in-Europe-1.pdf" target="_blank">EHPA — Subsidies Overview 2025 (PDF)</a><br>
+    <span style="font-size:0.78rem;color:var(--dim);">All country subsidy source links available in the Dashboard subsidy table.</span>
+  </div>
 </div>
 
 
