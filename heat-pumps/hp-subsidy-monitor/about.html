@@ -56,7 +56,7 @@ footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid v
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <span class="scope-tag" style="font-size:0.68rem;color:var(--dim);background:rgba(100,116,139,0.12);padding:3px 8px;border-radius:5px;">AW · LW · EW · Hybrids</span>
-      <button class="theme-btn" onclick="toggleTheme()"><i data-lucide="sun-moon" style="width:13px;height:13px;"></i> Theme</button>
+      <button class="theme-btn" onclick="toggleTheme()"><i data-lucide="sun-moon" style="width:13px;height:13px;"></i> <span id="tl">Light</span></button>
       <span style="font-size:0.65rem;color:var(--dim);">Apr 7, 2026</span>
     </div>
   </div>
@@ -172,8 +172,8 @@ footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid v
 
 </div>
 <script>
-(function(){const s=localStorage.getItem('hp-theme');if(s)document.documentElement.setAttribute('data-theme',s);})();
-function toggleTheme(){const c=document.documentElement.getAttribute('data-theme')||'dark';const n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('hp-theme',n);}
+(function(){const s=localStorage.getItem('hp-theme');if(s){document.documentElement.setAttribute('data-theme',s);const l=document.getElementById('tl');if(l)l.textContent=s==='dark'?'Light':'Dark';}})();
+function toggleTheme(){const c=document.documentElement.getAttribute('data-theme')||'dark';const n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('hp-theme',n);const l=document.getElementById('tl');if(l)l.textContent=n==='dark'?'Light':'Dark';}
 lucide.createIcons();
 </script>
 </body>

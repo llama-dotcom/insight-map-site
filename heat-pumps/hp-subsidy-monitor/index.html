@@ -129,6 +129,13 @@ tr:hover{background:rgba(56,189,248,0.04);}
 .src-list{font-size:0.78rem;line-height:2.1;}
 
 /* Modal */
+.cmp-sel{padding:7px 12px;border:1px solid var(--glass-b);border-radius:8px;background:var(--glass);color:var(--text);font-size:0.82rem;min-width:160px;}
+.cmp-sel:focus{outline:none;border-color:var(--accent);}
+.cmp-tbl{width:100%;border-collapse:collapse;font-size:0.82rem;margin-top:8px;}
+.cmp-tbl th{padding:8px;text-align:left;color:var(--dim);font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid var(--glass-b);}
+.cmp-tbl td{padding:8px;border-bottom:1px solid rgba(51,65,85,0.15);}
+.cmp-best{color:var(--green);font-weight:600;}
+
 .modal-bg{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:2000;justify-content:center;align-items:flex-start;padding:40px 20px;overflow-y:auto;backdrop-filter:blur(6px);}
 .modal-bg.show{display:flex;}
 .modal{background:var(--bg2);border:1px solid var(--glass-b);border-radius:16px;max-width:680px;width:100%;padding:28px;}
@@ -238,7 +245,20 @@ footer{text-align:center;padding:20px 0;border-top:1px solid var(--glass-b);colo
 
 <!-- COUNTRIES TAB -->
 <div id="p-countries" class="panel">
-  <div style="padding:14px 0 8px;"><input type="text" id="c-search" placeholder="Search country..." oninput="filterC()" style="width:100%;max-width:280px;padding:7px 14px;border:1px solid var(--glass-b);border-radius:8px;background:var(--glass);color:var(--text);font-size:0.82rem;"></div>
+  <!-- Compare tool -->
+  <div class="gc" style="padding:16px;margin:14px 0;">
+    <div style="font-size:0.9rem;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><i data-lucide="git-compare" style="width:16px;height:16px;color:var(--accent);"></i> Compare Countries (max 4)</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <select id="cmp1" class="cmp-sel"><option value="">Country 1...</option></select>
+      <select id="cmp2" class="cmp-sel"><option value="">Country 2...</option></select>
+      <select id="cmp3" class="cmp-sel"><option value="">Country 3...</option></select>
+      <select id="cmp4" class="cmp-sel"><option value="">Country 4...</option></select>
+      <button onclick="runCompare()" style="padding:7px 16px;border:1px solid var(--accent);border-radius:8px;background:rgba(56,189,248,0.15);color:var(--accent);cursor:pointer;font-size:0.82rem;font-weight:500;">Compare</button>
+    </div>
+    <div id="cmp-result" style="margin-top:12px;"></div>
+  </div>
+  <!-- Search + grid -->
+  <div style="padding:8px 0;"><input type="text" id="c-search" placeholder="Search country..." oninput="filterC()" style="width:100%;max-width:280px;padding:7px 14px;border:1px solid var(--glass-b);border-radius:8px;background:var(--glass);color:var(--text);font-size:0.82rem;"></div>
   <div class="c-grid" id="c-grid"></div>
 </div>
 
@@ -469,6 +489,28 @@ function openM(nm){
 }
 function closeM(){document.getElementById('modal').classList.remove('show');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeM();});
+
+// === COMPARE ===
+(function(){
+  const sorted=[...C].sort((a,b)=>a.n.localeCompare(b.n));
+  for(let i=1;i<=4;i++){const s=document.getElementById('cmp'+i);if(!s)return;sorted.forEach(c=>{const o=document.createElement('option');o.value=c.n;o.textContent=c.f+' '+c.n;s.appendChild(o);});}
+})();
+function runCompare(){
+  const sel=[];for(let i=1;i<=4;i++){const v=document.getElementById('cmp'+i).value;if(v)sel.push(v);}
+  if(sel.length<2){document.getElementById('cmp-result').innerHTML='<div style="color:var(--dim);font-size:0.85rem;padding:8px;">Select at least 2 countries.</div>';return;}
+  const cs=sel.map(n=>gc(n)).filter(Boolean);
+  const maxMs=Math.max(...cs.map(c=>c.ms));
+  let h='<table class="cmp-tbl"><thead><tr><th>Metric</th>'+cs.map(c=>'<th>'+c.f+' '+c.n+'</th>').join('')+'</tr></thead><tbody>';
+  h+='<tr><td>Max Subsidy</td>'+cs.map(c=>'<td class="'+(c.ms===maxMs&&maxMs>0?'cmp-best':'')+'">€'+c.ms.toLocaleString()+'</td>').join('')+'</tr>';
+  h+='<tr><td>Program</td>'+cs.map(c=>'<td>'+c.sp+'</td>').join('')+'</tr>';
+  h+='<tr><td>Electricity</td>'+cs.map(c=>'<td style="font-family:Menlo,Consolas,monospace;">€'+c.e.toFixed(3)+'</td>').join('')+'</tr>';
+  h+='<tr><td>Gas</td>'+cs.map(c=>'<td style="font-family:Menlo,Consolas,monospace;">'+(c.ga?'€'+c.ga.toFixed(3):'N/A')+'</td>').join('')+'</tr>';
+  h+='<tr><td>Elec/Gas Ratio</td>'+cs.map(c=>{const rc=c.r&&c.r>3.5?'color:var(--red)':c.r&&c.r>2.5?'color:var(--yellow)':'color:var(--green)';return'<td style="font-family:Menlo,Consolas,monospace;'+rc+'">'+(c.r?c.r.toFixed(2)+'x':'N/A')+'</td>';}).join('')+'</tr>';
+  h+='<tr><td>Market</td>'+cs.map(c=>'<td>'+(c.s>0?c.s+'k ('+c.yr+')':'N/A')+'</td>').join('')+'</tr>';
+  h+='<tr><td>HP Penetration</td>'+cs.map(c=>'<td>'+(c.pen||'N/A')+'</td>').join('')+'</tr>';
+  h+='</tbody></table>';
+  document.getElementById('cmp-result').innerHTML=h;
+}
 
 // === THEME ===
 function toggleTheme(){
