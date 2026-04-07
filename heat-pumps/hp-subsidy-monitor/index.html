@@ -345,9 +345,9 @@ const map=L.map('map',{scrollWheelZoom:false,zoomControl:true}).setView([52,12],
 let tileLayer;
 function setTiles(){
   if(tileLayer)map.removeLayer(tileLayer);
-  const isDk=(document.documentElement.getAttribute('data-theme')||'dark')==='dark';
-  const url=isDk?'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png?lang=en':'https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png?lang=en';
-  tileLayer=L.tileLayer(url,{attribution:'© OSM © CARTO',maxZoom:10,pane:'overlayPane'}).addTo(map);
+  // No CARTO labels — custom labels added via addLabels()
+  // Empty tile layer for attribution only
+  if(!tileLayer){tileLayer=L.tileLayer('',{attribution:'© OSM'}).addTo(map);}
 }
 setTiles();
 
@@ -407,8 +407,24 @@ function setMap(mode,btn){
       }
     }).addTo(map);
     updateLegend();
+    // Add custom country labels on top
+    addLabels();
   }catch(e){console.error(e);}
 })();
+
+let labelMarkers=[];
+function addLabels(){
+  labelMarkers.forEach(m=>map.removeLayer(m));
+  labelMarkers=[];
+  const isDk=(document.documentElement.getAttribute('data-theme')||'dark')==='dark';
+  const style=isDk?'color:#fff;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;':'color:#1a1510;text-shadow:-1px -1px 0 #f5f0e8,1px -1px 0 #f5f0e8,-1px 1px 0 #f5f0e8,1px 1px 0 #f5f0e8;';
+  C.forEach(c=>{
+    if(!c.la||!c.lo)return;
+    const icon=L.divIcon({className:'',html:`<div style="font-size:10px;font-weight:700;white-space:nowrap;pointer-events:none;${style}">${c.n.toUpperCase()}</div>`,iconSize:[0,0],iconAnchor:[0,0]});
+    const m=L.marker([c.la,c.lo],{icon,interactive:false,pane:'tooltipPane'}).addTo(map);
+    labelMarkers.push(m);
+  });
+}
 
 // === TABLE ===
 let sc=-1,sa=true;
@@ -533,6 +549,7 @@ function toggleTheme(){
   document.getElementById('theme-label').textContent=next==='dark'?'Light':'Dark';
   if(typeof geoLayer!=='undefined'&&geoLayer)geoLayer.setStyle(styleF);
   if(typeof setTiles==='function')setTiles();
+  if(typeof addLabels==='function')addLabels();
 }
 (function(){
   const saved=localStorage.getItem('hp-theme');
