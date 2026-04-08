@@ -516,7 +516,7 @@ function openM(nm){
   if(cn.length){
     h+=`<div class="m-s"><h3><i data-lucide="radio-tower" style="width:14px;height:14px;"></i> Policy Changes</h3>`;
     cn.forEach(n=>{const bc=n.i==='critical'?'imp-c':n.i==='medium'?'imp-m':'imp-i';
-      h+=`<div class="m-cd"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;"><span class="nm">${n.t}</span><span class="imp ${bc}">${n.i}</span></div><div class="dt">${n.ds}</div></div>`;});
+      h+=`<div class="m-cd"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;"><span class="nm">${n.t}</span><span class="imp ${bc}">${n.i}</span></div><div class="dt">${n.ds}</div>${n.src&&n.src.length?`<div style="margin-top:4px;">${n.src.map(s=>`<a href="${s.u}" target="_blank" style="font-size:0.72rem;color:var(--accent);">${s.n} →</a>`).join(' · ')}</div>`:''}</div>`;});
     h+=`</div>`;
   }
   h+=`<div class="m-s"><h3><i data-lucide="compass" style="width:14px;height:14px;"></i> Outlook</h3><p style="font-size:0.82rem;color:var(--muted);line-height:1.6;">${c.ol}</p></div>`;
