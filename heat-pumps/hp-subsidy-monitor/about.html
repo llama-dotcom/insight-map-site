@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>About — HP Subsidy Monitor</title>
 <script src="https://unpkg.com/lucide@latest"></script>
-<script>(function(){const s=localStorage.getItem('hp-theme');if(s)document.documentElement.setAttribute('data-theme',s);})();</script>
+<script src="shared.js"></script>
 <style>
 :root,[data-theme="dark"]{
   --bg:#0f1629;--bg2:#141d33;--card:rgba(20,29,51,0.7);
@@ -21,23 +21,7 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;}
 a{color:var(--accent);text-decoration:none;}a:hover{opacity:0.8;}
 
-/* EXACT SAME header CSS as index.html */
-header{background:var(--bg);border-bottom:1px solid var(--glass-b);padding:12px 0;position:sticky;top:0;z-index:1000;backdrop-filter:blur(24px);}
-header .container{max-width:1400px;margin:0 auto;padding:0 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
-.logo{display:flex;align-items:center;gap:10px;}
-.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#c9a84c,#e8dcc8);border-radius:8px;display:flex;align-items:center;justify-content:center;}
-.logo-icon i{color:#2a2015 !important;}
-.logo h1{font-size:1.05rem;font-weight:700;color:var(--text);}
-.logo .sub{font-size:0.65rem;color:var(--dim);}
-.tabs{display:flex;gap:2px;background:rgba(30,41,59,0.3);border-radius:10px;padding:3px;}
-[data-theme="light"] .tabs{background:rgba(190,180,165,0.25);}
-.tab{padding:7px 18px;border-radius:8px;font-size:0.8rem;font-weight:500;color:var(--dim);cursor:pointer;border:none;background:none;transition:all 0.2s;display:flex;align-items:center;gap:6px;text-decoration:none;}
-.tab:hover{color:var(--text);}
-.tab.active{color:var(--text);background:rgba(56,189,248,0.15);box-shadow:0 0 12px rgba(56,189,248,0.1);}
-.scope-tag{font-size:0.68rem;color:var(--dim);background:rgba(100,116,139,0.12);padding:3px 8px;border-radius:5px;letter-spacing:0.3px;}
-.theme-btn{background:var(--glass);border:1px solid var(--glass-b);border-radius:8px;padding:5px 10px;cursor:pointer;color:var(--dim);font-size:0.75rem;display:flex;align-items:center;gap:4px;transition:all 0.2s;}
-.theme-btn:hover{border-color:var(--accent);color:var(--text);}
-.updated{font-size:0.65rem;color:var(--dim);}
+/* Header injected by shared.js */
 
 /* Content */
 .content{max-width:800px;margin:0 auto;padding:20px 20px 40px;}
@@ -62,27 +46,7 @@ footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid v
 </head>
 <body>
 
-<!-- EXACT SAME header HTML as index.html -->
-<header>
-  <div class="container">
-    <div class="logo">
-      <div class="logo-icon"><i data-lucide="zap" style="width:17px;height:17px;color:#070b16;"></i></div>
-      <div><h1>HP Subsidy Monitor</h1><div class="sub">European Heat Pump Subsidy Dashboard</div></div>
-    </div>
-    <div class="tabs">
-      <a href="index.html" class="tab" style="text-decoration:none;"><i data-lucide="layout-dashboard" style="width:14px;height:14px;"></i> Dashboard</a>
-      <a href="index.html" class="tab" style="text-decoration:none;"><i data-lucide="globe" style="width:14px;height:14px;"></i> Countries</a>
-      <a href="energy-prices.html" class="tab" style="text-decoration:none;"><i data-lucide="bolt" style="width:14px;height:14px;"></i> Electricity Prices</a>
-      <a href="about.html" class="tab active" style="text-decoration:none;"><i data-lucide="info" style="width:14px;height:14px;"></i> About</a>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <span class="scope-tag">AW · LW · EW · Hybrids</span>
-      <button style="background:linear-gradient(135deg,#c9a84c,#e8dcc8);border:none;border-radius:8px;padding:5px 12px;cursor:pointer;color:#2a2015;font-size:0.75rem;font-weight:600;display:flex;align-items:center;gap:4px;" onclick="location.reload()"><i data-lucide="refresh-cw" style="width:13px;height:13px;"></i> Refresh</button>
-      <button class="theme-btn" onclick="toggleTheme()"><i data-lucide="sun-moon" style="width:13px;height:13px;"></i> <span id="theme-label">Light</span></button>
-      <span class="updated">Apr 7, 2026</span>
-    </div>
-  </div>
-</header>
+<script>initHeader('about');</script>
 
 <div class="content">
 
@@ -191,18 +155,7 @@ footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid v
 </footer>
 
 <script>
-function toggleTheme(){
-  const c=document.documentElement.getAttribute('data-theme')||'dark';
-  const n=c==='dark'?'light':'dark';
-  document.documentElement.setAttribute('data-theme',n);
-  localStorage.setItem('hp-theme',n);
-  document.getElementById('theme-label').textContent=n==='dark'?'Light':'Dark';
-}
-(function(){
-  const s=localStorage.getItem('hp-theme');
-  if(s){document.documentElement.setAttribute('data-theme',s);
-    const l=document.getElementById('theme-label');if(l)l.textContent=s==='dark'?'Light':'Dark';}
-})();
+// Theme handled by shared.js
 lucide.createIcons();
 </script>
 </body>

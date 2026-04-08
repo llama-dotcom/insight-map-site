@@ -1,0 +1,74 @@
+// === SHARED HEADER & THEME for all pages ===
+
+// Theme init (before DOM)
+(function(){const s=localStorage.getItem('hp-theme');if(s)document.documentElement.setAttribute('data-theme',s);})();
+
+// Inject header
+function initHeader(activePage){
+  const pages=[
+    {id:'dashboard',label:'Dashboard',icon:'layout-dashboard',href:'index.html'},
+    {id:'countries',label:'Countries',icon:'globe',href:'index.html'},
+    {id:'prices',label:'Electricity Prices',icon:'bolt',href:'energy-prices.html'},
+    {id:'about',label:'About',icon:'info',href:'about.html'}
+  ];
+
+  const themeLbl=(document.documentElement.getAttribute('data-theme')||'dark')==='dark'?'Light':'Dark';
+
+  const header=document.createElement('header');
+  header.innerHTML=`
+    <div class="hdr-container">
+      <div class="hdr-logo">
+        <div class="hdr-icon"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+        <div><div class="hdr-title">HP Subsidy Monitor</div><div class="hdr-sub">European Heat Pump Subsidy Dashboard</div></div>
+      </div>
+      <div class="hdr-tabs">
+        ${pages.map(p=>`<a href="${p.href}" class="hdr-tab${p.id===activePage?' active':''}">${p.label}</a>`).join('')}
+      </div>
+      <div class="hdr-right">
+        <span class="hdr-scope">AW · LW · EW · Hybrids</span>
+        <button class="hdr-refresh" onclick="typeof refreshData==='function'?refreshData():location.reload()">Refresh</button>
+        <button class="hdr-theme" onclick="toggleTheme()"><span id="theme-label">${themeLbl}</span></button>
+        <span class="hdr-date" id="last-updated">${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>
+      </div>
+    </div>`;
+  document.body.prepend(header);
+}
+
+// Theme toggle
+function toggleTheme(){
+  const c=document.documentElement.getAttribute('data-theme')||'dark';
+  const n=c==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',n);
+  localStorage.setItem('hp-theme',n);
+  document.getElementById('theme-label').textContent=n==='dark'?'Light':'Dark';
+  // Notify page-specific handlers
+  if(typeof onThemeChange==='function')onThemeChange(n);
+}
+
+// Inject shared CSS
+const sharedCSS=document.createElement('style');
+sharedCSS.textContent=`
+header{background:var(--bg);border-bottom:1px solid var(--glass-b);padding:12px 0;position:sticky;top:0;z-index:1000;backdrop-filter:blur(24px);}
+.hdr-container{max-width:1400px;margin:0 auto;padding:0 20px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.hdr-logo{display:flex;align-items:center;gap:10px;}
+.hdr-icon{width:32px;height:32px;background:linear-gradient(135deg,#c9a84c,#e8dcc8);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#2a2015;}
+.hdr-title{font-size:1.05rem;font-weight:700;color:var(--text);}
+.hdr-sub{font-size:0.65rem;color:var(--dim);}
+.hdr-tabs{display:flex;gap:2px;background:rgba(30,41,59,0.3);border-radius:10px;padding:3px;}
+[data-theme="light"] .hdr-tabs{background:rgba(190,180,165,0.25);}
+.hdr-tab{padding:7px 18px;border-radius:8px;font-size:0.8rem;font-weight:500;color:var(--dim);text-decoration:none;display:flex;align-items:center;gap:6px;transition:all 0.2s;}
+.hdr-tab:hover{color:var(--text);opacity:1;}
+.hdr-tab.active{color:var(--text);background:rgba(56,189,248,0.15);box-shadow:0 0 12px rgba(56,189,248,0.1);}
+.hdr-right{display:flex;align-items:center;gap:10px;}
+.hdr-scope{font-size:0.68rem;color:var(--dim);background:rgba(100,116,139,0.12);padding:3px 8px;border-radius:5px;letter-spacing:0.3px;}
+.hdr-refresh{background:linear-gradient(135deg,#c9a84c,#e8dcc8);border:none;border-radius:8px;padding:5px 12px;cursor:pointer;color:#2a2015;font-size:0.75rem;font-weight:600;transition:all 0.2s;}
+.hdr-refresh:hover{opacity:0.85;transform:translateY(-1px);}
+.hdr-theme{background:var(--glass);border:1px solid var(--glass-b);border-radius:8px;padding:5px 10px;cursor:pointer;color:var(--dim);font-size:0.75rem;transition:all 0.2s;}
+.hdr-theme:hover{border-color:var(--accent);color:var(--text);}
+.hdr-date{font-size:0.65rem;color:var(--dim);}
+@media(max-width:900px){
+  .hdr-container{flex-direction:column;align-items:flex-start;}
+  .hdr-tabs{width:100%;justify-content:center;}
+}
+`;
+document.head.appendChild(sharedCSS);
