@@ -188,8 +188,9 @@ footer{text-align:center;padding:20px 0;border-top:1px solid var(--glass-b);colo
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <span class="scope-tag">AW · LW · EW · Hybrids</span>
+      <button class="theme-btn" onclick="refreshData()" id="refresh-btn"><i data-lucide="refresh-cw" style="width:13px;height:13px;"></i> Refresh</button>
       <button class="theme-btn" onclick="toggleTheme()"><i data-lucide="sun-moon" style="width:13px;height:13px;"></i> <span id="theme-label">Light</span></button>
-      <span class="updated">Apr 7, 2026</span>
+      <span class="updated" id="last-updated">Apr 8, 2026</span>
     </div>
   </div>
 </header>
@@ -573,6 +574,16 @@ function toggleTheme(){
   if(saved){document.documentElement.setAttribute('data-theme',saved);
     const lbl=document.getElementById('theme-label');if(lbl)lbl.textContent=saved==='dark'?'Light':'Dark';}
 })();
+
+// === REFRESH ===
+async function refreshData(){
+  const btn=document.getElementById('refresh-btn');
+  btn.style.opacity='0.5';btn.style.pointerEvents='none';
+  await loadFromDB();
+  btn.style.opacity='1';btn.style.pointerEvents='auto';
+  const now=new Date();
+  document.getElementById('last-updated').textContent=now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+}
 
 // === LOAD FROM SUPABASE ===
 async function loadFromDB(){
