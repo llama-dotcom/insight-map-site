@@ -12,7 +12,8 @@ function initHeader(activePage){
     {id:'about',label:'About',icon:'info',href:'about.html'}
   ];
 
-  const themeLbl=(document.documentElement.getAttribute('data-theme')||'dark')==='dark'?'Light':'Dark';
+  const isDk=(document.documentElement.getAttribute('data-theme')||'dark')==='dark';
+  const themeLbl=isDk?'Light mode':'Dark mode';
 
   const header=document.createElement('header');
   header.innerHTML=`
@@ -40,7 +41,7 @@ function toggleTheme(){
   const n=c==='dark'?'light':'dark';
   document.documentElement.setAttribute('data-theme',n);
   localStorage.setItem('hp-theme',n);
-  document.getElementById('theme-label').textContent=n==='dark'?'Light':'Dark';
+  document.getElementById('theme-label').textContent=n==='dark'?'Light mode':'Dark mode';
   // Notify page-specific handlers
   if(typeof onThemeChange==='function')onThemeChange(n);
 }
@@ -61,10 +62,12 @@ header{background:var(--bg);border-bottom:1px solid var(--glass-b);padding:12px 
 .hdr-tab.active{color:var(--text);background:rgba(56,189,248,0.15);box-shadow:0 0 12px rgba(56,189,248,0.1);}
 .hdr-right{display:flex;align-items:center;gap:10px;}
 .hdr-scope{font-size:0.68rem;color:var(--dim);background:rgba(100,116,139,0.12);padding:3px 8px;border-radius:5px;letter-spacing:0.3px;}
-.hdr-refresh{background:linear-gradient(135deg,#c9a84c,#e8dcc8);border:none;border-radius:8px;padding:5px 12px;cursor:pointer;color:#2a2015;font-size:0.75rem;font-weight:600;transition:all 0.2s;}
+.hdr-refresh{background:linear-gradient(135deg,#c9a84c,#e8dcc8);border:none;border-radius:8px;padding:5px 12px;cursor:pointer;color:#2a2015;font-size:0.75rem;font-weight:400;transition:all 0.2s;}
 .hdr-refresh:hover{opacity:0.85;transform:translateY(-1px);}
-.hdr-theme{background:var(--glass);border:1px solid var(--glass-b);border-radius:8px;padding:5px 10px;cursor:pointer;color:var(--dim);font-size:0.75rem;transition:all 0.2s;}
-.hdr-theme:hover{border-color:var(--accent);color:var(--text);}
+.hdr-theme{border-radius:8px;padding:5px 12px;cursor:pointer;font-size:0.75rem;font-weight:500;transition:all 0.2s;border:none;}
+[data-theme="dark"] .hdr-theme{background:#e8e2d6;color:#2a2015;}
+[data-theme="light"] .hdr-theme,.hdr-theme{background:#1e2433;color:#e8ecf4;}
+.hdr-theme:hover{opacity:0.85;}
 .hdr-date{font-size:0.65rem;color:var(--dim);}
 @media(max-width:900px){
   .hdr-container{flex-direction:column;align-items:flex-start;}
