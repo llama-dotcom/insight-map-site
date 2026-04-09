@@ -26,7 +26,7 @@ function initHeader(activePage){
       <div class="hdr-tabs">
         ${pages.map(p=>{
           const cls='hdr-tab'+(p.id===activePage?' active':'');
-          if(isIndex&&p.tabAction) return`<button class="${cls}" onclick="${p.tabAction}">${p.label}</button>`;
+          if(isIndex&&p.tabAction) return`<button class="${cls}" onclick="document.querySelectorAll('.hdr-tab').forEach(t=>t.classList.remove('active'));this.classList.add('active');${p.tabAction}">${p.label}</button>`;
           return`<a href="${p.href}" class="${cls}">${p.label}</a>`;
         }).join('')}
       </div>
