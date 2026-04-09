@@ -75,12 +75,12 @@ footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid v
   <table>
     <thead><tr><th>Data</th><th>Frequency</th><th>Method</th><th>Source</th></tr></thead>
     <tbody>
-      <tr><td><strong>News & Signals</strong></td><td><span class="tag t-d">Daily</span></td><td>AI news scanning</td><td>Google News, gov portals</td></tr>
-      <tr><td><strong>Subsidy detection</strong></td><td><span class="tag t-d">Daily</span></td><td>URL monitoring</td><td>Government portals</td></tr>
-      <tr><td><strong>Energy prices</strong></td><td><span class="tag t-m">Monthly</span></td><td>API pull</td><td>Eurostat, Ofgem</td></tr>
-      <tr><td><strong>Subsidy amounts</strong></td><td><span class="tag t-m">Monthly</span></td><td>Auto + manual</td><td>Government portals</td></tr>
-      <tr><td><strong>Market data</strong></td><td><span class="tag t-o">On demand</span></td><td>Manual</td><td>EHPA, national assoc.</td></tr>
-      <tr><td><strong>HP penetration</strong></td><td><span class="tag t-o">On demand</span></td><td>Calculation</td><td>EHPA + Eurostat</td></tr>
+      <tr><td><strong>News & Signals</strong></td><td><span class="tag t-d">Daily 08:00 CET</span></td><td>Google News RSS → Groq/Llama AI summary</td><td>Google News, gov portals</td></tr>
+      <tr><td><strong>Subsidy detection</strong></td><td><span class="tag t-d">Daily 08:00 CET</span></td><td>Google News RSS → AI analysis</td><td>Government portals</td></tr>
+      <tr><td><strong>Energy prices</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Automated API pull</td><td>Eurostat, Ofgem</td></tr>
+      <tr><td><strong>Subsidy amounts</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Automated check</td><td>Government portals</td></tr>
+      <tr><td><strong>Market data</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Automated + Refresh button</td><td>EHPA, BWP, national assoc.</td></tr>
+      <tr><td><strong>HP penetration</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Calculation</td><td>EHPA + Eurostat</td></tr>
     </tbody>
   </table>
 </div>
@@ -91,8 +91,12 @@ footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid v
     <li><strong>Frontend:</strong> HTML, CSS, JavaScript</li>
     <li><strong>Maps:</strong> Leaflet.js + CARTO tiles + world-atlas TopoJSON</li>
     <li><strong>Charts:</strong> Chart.js</li>
+    <li><strong>Database:</strong> Supabase (PostgreSQL, EU Frankfurt)</li>
+    <li><strong>AI News Analysis:</strong> Groq API + Llama 3.3 70B</li>
+    <li><strong>News Source:</strong> Google News RSS (real-time articles)</li>
+    <li><strong>Automation:</strong> Vercel Cron Jobs (daily 08:00 CET)</li>
     <li><strong>Hosting:</strong> Vercel (auto-deploy from GitHub)</li>
-    <li><strong>Domain:</strong> insight-map.com</li>
+    <li><strong>Domain:</strong> insight-map.com (Namecheap)</li>
   </ul>
 </div>
 

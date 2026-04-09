@@ -28,14 +28,14 @@ module.exports = async function handler(req, res) {
         const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=en&gl=US&ceid=US:en`;
 
         let articles = [];
+        const maxArticles = (country.id === 'DE' || country.id === 'FR' || country.id === 'GB') ? 8 : 5;
         try {
           const rssRes = await fetch(rssUrl);
           const rssText = await rssRes.text();
 
-          // Parse RSS XML — extract titles, links, dates
           const itemRegex = /<item>[\s\S]*?<title>([\s\S]*?)<\/title>[\s\S]*?<link>([\s\S]*?)<\/link>[\s\S]*?<pubDate>([\s\S]*?)<\/pubDate>[\s\S]*?<source[^>]*>([\s\S]*?)<\/source>[\s\S]*?<\/item>/g;
           let match;
-          while ((match = itemRegex.exec(rssText)) !== null && articles.length < 5) {
+          while ((match = itemRegex.exec(rssText)) !== null && articles.length < maxArticles) {
             const pubDate = new Date(match[3].trim());
             const now = new Date();
             const daysDiff = (now - pubDate) / (1000 * 60 * 60 * 24);

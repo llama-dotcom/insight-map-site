@@ -530,6 +530,9 @@ function onThemeChange(n){
 async function refreshData(){
   const btn=document.getElementById('refresh-btn');
   btn.style.opacity='0.5';btn.style.pointerEvents='none';
+  // First trigger API to fetch fresh news
+  try{await fetch('/api/update');}catch(e){console.log('API update skipped',e);}
+  // Then reload from Supabase
   await loadFromDB();
   btn.style.opacity='1';btn.style.pointerEvents='auto';
   const now=new Date();
