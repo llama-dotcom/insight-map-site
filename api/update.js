@@ -1,13 +1,7 @@
-import Groq from 'groq-sdk';
+const Groq = require('groq-sdk');
 
-export const config = {
-  maxDuration: 60,
-};
-
-// Cron: every day at 06:00 UTC = 08:00 CET summer, 07:00 CET winter
-// Vercel cron defined in vercel.json
-
-export default async function handler(req, res) {
+// Cron: every day at 06:00 UTC = 08:00 CET summer
+module.exports = async function handler(req, res) {
   try {
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
