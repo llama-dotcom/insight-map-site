@@ -2,6 +2,15 @@ const Groq = require('groq-sdk');
 
 module.exports = async function handler(req, res) {
   try {
+    // Auth check — only allow Vercel Cron or requests with secret
+    const authHeader = req.headers.authorization;
+    const cronSecret = process.env.CRON_SECRET;
+    const isVercelCron = req.headers['x-vercel-cron'] === '1';
+
+    if (!isVercelCron && cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
     const GROQ_KEY = process.env.GROQ_API_KEY;

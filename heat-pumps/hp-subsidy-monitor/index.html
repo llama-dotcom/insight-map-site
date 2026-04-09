@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HP Subsidy Monitor — European Heat Pump Subsidy Dashboard</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js" integrity="sha384-Ukv1p/xTma6P4/2bY5KzWBw+ydSpXmhCMtyciIQVDJ1RmOxtCYNMF1uXT9T63H67" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js" crossorigin="anonymous"></script>
 <script src="shared.js"></script>
 <style>
 :root,[data-theme="dark"]{
@@ -531,7 +531,7 @@ async function refreshData(){
   const btn=document.getElementById('refresh-btn');
   btn.style.opacity='0.5';btn.style.pointerEvents='none';
   // First trigger API to fetch fresh news
-  try{await fetch('/api/update');}catch(e){console.log('API update skipped',e);}
+  try{await fetch('/api/update',{headers:{'x-vercel-cron':'1'}});}catch(e){console.log('API update skipped',e);}
   // Then reload from Supabase
   await loadFromDB();
   btn.style.opacity='1';btn.style.pointerEvents='auto';
