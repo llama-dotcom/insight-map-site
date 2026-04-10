@@ -1,4 +1,146 @@
 const Groq = require('groq-sdk');
+const XLSX = require('xlsx');
+
+// =============================================================
+// HELPER: Eurostat JSON-stat fetcher
+// Returns { data: { COUNTRY_CODE: { 'YYYY-Sn': value } }, updated }
+// =============================================================
+async function fetchEurostat(dataset, queryString) {
+  const url = `https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/${dataset}?format=JSON&${queryString}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Eurostat ${dataset} HTTP ${res.status}`);
+  const d = await res.json();
+
+  const geoCat = d.dimension.geo.category;
+  const timeCat = d.dimension.time.category;
+  const nTime = d.size[7]; // dimension order: freq,siec,nrg_cons,unit,tax,currency,geo,time
+
+  const result = {};
+  for (const [gCode, gIdx] of Object.entries(geoCat.index)) {
+    result[gCode] = {};
+    for (const [tCode, tIdx] of Object.entries(timeCat.index)) {
+      const flatIdx = gIdx * nTime + tIdx;
+      const val = d.value[flatIdx];
+      if (val != null) result[gCode][tCode] = val;
+    }
+  }
+  return { data: result, updated: d.updated };
+}
+
+// =============================================================
+// HELPER: ElCom SPARQL — Swiss median electricity tariff (Rappen/kWh)
+// =============================================================
+async function fetchSwissElectricity(year) {
+  const query = `PREFIX dim: <https://energy.ld.admin.ch/elcom/electricityprice/dimension/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+SELECT (AVG(?total) AS ?avg) (COUNT(?total) AS ?n) WHERE {
+  GRAPH <https://lindas.admin.ch/elcom/electricityprice> {
+    ?obs a <https://cube.link/Observation> ;
+         dim:period "${year}"^^xsd:gYear ;
+         dim:category <https://energy.ld.admin.ch/elcom/electricityprice/category/H4> ;
+         dim:product <https://energy.ld.admin.ch/elcom/electricityprice/product/standard> ;
+         dim:total ?total .
+  }
+}`;
+  const url = `https://lindas.admin.ch/query?query=${encodeURIComponent(query)}`;
+  const res = await fetch(url, { headers: { 'Accept': 'application/sparql-results+json' } });
+  if (!res.ok) throw new Error(`ElCom HTTP ${res.status}`);
+  const d = await res.json();
+  const b = d.results.bindings[0];
+  if (!b || !b.avg || parseInt(b.n.value) === 0) return null;
+  return parseFloat(b.avg.value) / 100; // Rappen → CHF per kWh
+}
+
+// =============================================================
+// HELPER: UK prices via gov.uk DESNZ XLSX (annual data, IEA-derived)
+// commodity = 'electricity' | 'gas' → returns [{year, pence}]
+// =============================================================
+async function fetchUkPricesFromDesnz(commodity) {
+  const titles = {
+    electricity: 'Domestic electricity prices in the IEA',
+    gas:         'Domestic gas prices in the IEA'
+  };
+  // 1. Find latest XLSX URL via gov.uk content API (stable URL)
+  const govRes = await fetch('https://www.gov.uk/api/content/government/statistical-data-sets/international-domestic-energy-prices');
+  if (!govRes.ok) throw new Error(`gov.uk API HTTP ${govRes.status}`);
+  const govData = await govRes.json();
+  const att = (govData.details?.attachments || []).find(a => (a.title || '').includes(titles[commodity]));
+  if (!att) throw new Error(`gov.uk: attachment "${titles[commodity]}" not found`);
+
+  // 2. Download XLSX
+  const xlsxRes = await fetch(att.url);
+  if (!xlsxRes.ok) throw new Error(`DESNZ XLSX HTTP ${xlsxRes.status}`);
+  const buffer = Buffer.from(await xlsxRes.arrayBuffer());
+
+  // 3. Parse — find sheet with "(inc. taxes)" but not "% change"
+  const wb = XLSX.read(buffer, { type: 'buffer' });
+  const sheetName = wb.SheetNames.find(n => n.includes('(inc. taxes)') && !n.includes('change'));
+  if (!sheetName) throw new Error('DESNZ: no "(inc. taxes)" sheet');
+  const sheet = wb.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
+
+  // 4. Find header row containing "Year" + "United Kingdom"
+  let headerRow = -1, ukIdx = -1, yearIdx = -1;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i] || [];
+    if (row.includes('Year') && row.includes('United Kingdom')) {
+      headerRow = i;
+      yearIdx = row.indexOf('Year');
+      ukIdx = row.indexOf('United Kingdom');
+      break;
+    }
+  }
+  if (headerRow === -1) throw new Error('DESNZ: header row not found');
+
+  // 5. Extract data
+  const data = [];
+  for (let i = headerRow + 1; i < rows.length; i++) {
+    const row = rows[i] || [];
+    const year = parseInt(row[yearIdx]);
+    const pence = parseFloat(row[ukIdx]);
+    if (Number.isFinite(year) && Number.isFinite(pence)) data.push({ year, pence });
+  }
+  return data;
+}
+
+// =============================================================
+// HELPER: ECB exchange rate via Frankfurter (free, no key)
+// =============================================================
+async function fetchEcbRate(fromCurrency) {
+  const res = await fetch(`https://api.frankfurter.app/latest?from=${fromCurrency}&to=EUR`);
+  if (!res.ok) throw new Error(`Frankfurter HTTP ${res.status}`);
+  const d = await res.json();
+  return d.rates.EUR;
+}
+
+// =============================================================
+// HELPER: Batch UPSERT into energy_prices (one HTTP call for many rows)
+// =============================================================
+async function upsertEnergyPrices(SUPABASE_URL, SUPABASE_KEY, rows) {
+  if (!rows.length) return 0;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/energy_prices?on_conflict=country_code,year,period`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify(rows)
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Batch upsert ${rows.length} rows: ${res.status} ${text.slice(0, 200)}`);
+  }
+  return rows.length;
+}
+
+// Country code → display name (Eurostat returns codes; we need names for the table)
+const EU_COUNTRIES = {
+  DE: 'Germany', FR: 'France', NL: 'Netherlands', IT: 'Italy', ES: 'Spain',
+  PL: 'Poland', AT: 'Austria', BE: 'Belgium', SE: 'Sweden', DK: 'Denmark',
+  FI: 'Finland', CZ: 'Czech Republic', EE: 'Estonia', LT: 'Lithuania', NO: 'Norway'
+};
 
 module.exports = async function handler(req, res) {
   try {
@@ -24,6 +166,9 @@ module.exports = async function handler(req, res) {
     const results = { news: 0, prices: 0, market: 0, alerts: [], errors: [] };
     const today = new Date();
     const isFirstOfMonth = today.getDate() === 1;
+    // Manual override for testing (requires CRON_SECRET auth)
+    const forcePrices = req.query?.run_prices === '1';
+    const runMonthly = isFirstOfMonth || forcePrices;
 
     // Get countries
     const countriesRes = await fetch(`${SUPABASE_URL}/rest/v1/countries?select=id,name,electricity_price,gas_price,market_size,subsidy_program,max_subsidy&order=sort_weight.desc`, {
@@ -161,48 +306,169 @@ module.exports = async function handler(req, res) {
       } catch (e) { results.errors.push(`News ${country.name}: ${e.message}`); }
     }
 
-    // === MONTHLY (1st of month): Energy prices + Market data ===
-    if (isFirstOfMonth) {
-      // Energy prices — search for latest Eurostat data
-      for (const country of countries) {
-        try {
-          const query = encodeURIComponent(`${country.name} electricity price residential 2026 eurostat kWh`);
-          const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=en&gl=US&ceid=US:en`;
-          const rssRes = await fetch(rssUrl);
-          const rssText = await rssRes.text();
+    // === MONTHLY (1st of month) or ?run_prices=1: REAL energy prices from Eurostat + ElCom ===
+    if (runMonthly) {
+      const MIN_YEAR = 2020; // only keep recent history (matches the chart range)
+      const nowIso = new Date().toISOString();
+      const elecSrcUrl = 'https://ec.europa.eu/eurostat/databrowser/view/nrg_pc_204/default/table';
+      // Track all rows we wrote, so we can sync the countries table afterwards
+      const allFreshRows = [];
 
-          // Use Groq to extract price from news
-          const completion = await groq.chat.completions.create({
-            messages: [
-              { role: 'system', content: 'Extract energy prices from news context. Return JSON only.' },
-              { role: 'user', content: `Based on the latest available data, what are the current residential electricity and gas prices in ${country.name}? Current values in our database: electricity €${country.electricity_price}/kWh, gas €${country.gas_price || 'N/A'}/kWh.\n\nIf you have more recent data, return: {"electricity": 0.XXX, "gas": 0.XXX, "updated": true}\nIf no update: {"updated": false}` }
-            ],
-            model: 'llama-3.3-70b-versatile', temperature: 0.1, max_tokens: 200,
-            response_format: { type: 'json_object' }
-          });
+      // --- 1. Eurostat electricity (NRG_PC_204) + gas (NRG_PC_202) for 14 EU + Norway ---
+      try {
+        const geoQuery = Object.keys(EU_COUNTRIES).map(c => `geo=${c}`).join('&');
+        const elec = await fetchEurostat('nrg_pc_204',
+          `siec=E7000&nrg_cons=KWH2500-4999&unit=KWH&tax=I_TAX&currency=EUR&${geoQuery}`);
+        const gas = await fetchEurostat('nrg_pc_202',
+          `siec=G3000&nrg_cons=GJ20-199&unit=KWH&tax=I_TAX&currency=EUR&${geoQuery}`);
 
-          const priceContent = completion.choices[0]?.message?.content;
-          if (priceContent) {
-            const priceData = JSON.parse(priceContent);
-            if (priceData.updated && priceData.electricity) {
-              await fetch(`${SUPABASE_URL}/rest/v1/countries?id=eq.${country.id}`, {
-                method: 'PATCH',
-                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  electricity_price: priceData.electricity,
-                  gas_price: priceData.gas || country.gas_price,
-                  price_ratio: priceData.gas ? (priceData.electricity / priceData.gas).toFixed(2) : country.price_ratio,
-                  updated_at: new Date().toISOString()
-                })
-              });
-              results.prices++;
-            }
+        const euRows = [];
+        for (const code of Object.keys(EU_COUNTRIES)) {
+          const elecData = elec.data[code] || {};
+          const gasData = gas.data[code] || {};
+          const allPeriods = new Set([...Object.keys(elecData), ...Object.keys(gasData)]);
+
+          for (const periodCode of allPeriods) {
+            const m = periodCode.match(/^(\d{4})-S(\d)$/);
+            if (!m) continue;
+            const year = parseInt(m[1]);
+            if (year < MIN_YEAR) continue; // skip ancient history
+            euRows.push({
+              country_code: code,
+              country_name: EU_COUNTRIES[code],
+              year,
+              period: `H${m[2]}`,
+              electricity_eur_kwh: elecData[periodCode] ?? null,
+              gas_eur_kwh: gasData[periodCode] ?? null,
+              source: 'eurostat',
+              source_url: elecSrcUrl,
+              updated_at: nowIso
+            });
           }
-        } catch (e) { results.errors.push(`Prices ${country.name}: ${e.message}`); }
+        }
+        const written = await upsertEnergyPrices(SUPABASE_URL, SUPABASE_KEY, euRows);
+        results.prices += written;
+        allFreshRows.push(...euRows);
+      } catch (e) {
+        results.errors.push(`Eurostat: ${e.message}`);
       }
 
-      // Market data — check for new reports
-      for (const country of topCountries) {
+      // --- 2. Switzerland (ElCom SPARQL, annual, last 6 years) ---
+      try {
+        const chfRate = await fetchEcbRate('CHF');
+        const currentYear = today.getFullYear();
+        const chRows = [];
+        for (let y = currentYear; y >= MIN_YEAR; y--) {
+          const chfPerKwh = await fetchSwissElectricity(y);
+          if (chfPerKwh != null) {
+            chRows.push({
+              country_code: 'CH',
+              country_name: 'Switzerland',
+              year: y,
+              period: 'A',
+              electricity_eur_kwh: +(chfPerKwh * chfRate).toFixed(5),
+              gas_eur_kwh: null,
+              source: 'elcom',
+              source_url: 'https://www.strompreis.elcom.admin.ch/',
+              updated_at: nowIso
+            });
+          }
+        }
+        const written = await upsertEnergyPrices(SUPABASE_URL, SUPABASE_KEY, chRows);
+        results.prices += written;
+        allFreshRows.push(...chRows);
+      } catch (e) {
+        results.errors.push(`ElCom: ${e.message}`);
+      }
+
+      // --- 3. UK (gov.uk DESNZ IEA tables, annual data) ---
+      try {
+        const [ukElec, ukGas, gbpRate] = await Promise.all([
+          fetchUkPricesFromDesnz('electricity'),
+          fetchUkPricesFromDesnz('gas'),
+          fetchEcbRate('GBP')
+        ]);
+        // Merge electricity + gas by year, filter to MIN_YEAR onwards
+        const ukByYear = {};
+        for (const { year, pence } of ukElec) {
+          if (year < MIN_YEAR) continue;
+          ukByYear[year] = ukByYear[year] || { year };
+          ukByYear[year].electricity_eur_kwh = +((pence / 100) * gbpRate).toFixed(5);
+        }
+        for (const { year, pence } of ukGas) {
+          if (year < MIN_YEAR) continue;
+          ukByYear[year] = ukByYear[year] || { year };
+          ukByYear[year].gas_eur_kwh = +((pence / 100) * gbpRate).toFixed(5);
+        }
+        const ukRows = Object.values(ukByYear).map(r => ({
+          country_code: 'GB',
+          country_name: 'UK',
+          year: r.year,
+          period: 'A',
+          electricity_eur_kwh: r.electricity_eur_kwh ?? null,
+          gas_eur_kwh: r.gas_eur_kwh ?? null,
+          source: 'gov-uk-desnz',
+          source_url: 'https://www.gov.uk/government/statistical-data-sets/international-domestic-energy-prices',
+          updated_at: nowIso
+        }));
+        const written = await upsertEnergyPrices(SUPABASE_URL, SUPABASE_KEY, ukRows);
+        results.prices += written;
+        allFreshRows.push(...ukRows);
+      } catch (e) {
+        results.errors.push(`UK DESNZ: ${e.message}`);
+      }
+
+      // --- 4. SYNC: patch countries.electricity_price/gas_price/price_ratio with latest ---
+      // For each country, find the most recent (year, period) row and patch the legacy columns.
+      // This ensures index.html (reads countries.*) shows the same numbers as energy-prices.html.
+      try {
+        // Period priority: H2 > H1 > A (H2 is more recent within a year; A is annual fallback)
+        const periodRank = { H2: 3, H1: 2, A: 1 };
+        const latestByCountry = {};
+        for (const r of allFreshRows) {
+          const key = r.country_code;
+          const cur = latestByCountry[key];
+          if (!cur ||
+              r.year > cur.year ||
+              (r.year === cur.year && (periodRank[r.period] || 0) > (periodRank[cur.period] || 0))) {
+            latestByCountry[key] = r;
+          }
+        }
+        let synced = 0;
+        for (const [code, row] of Object.entries(latestByCountry)) {
+          // Compute price ratio (electricity / gas) for HP economics
+          let ratio = null;
+          if (row.electricity_eur_kwh && row.gas_eur_kwh) {
+            ratio = +(row.electricity_eur_kwh / row.gas_eur_kwh).toFixed(2);
+          }
+          const patch = {
+            electricity_price: row.electricity_eur_kwh,
+            gas_price: row.gas_eur_kwh,
+            price_ratio: ratio,
+            updated_at: nowIso
+          };
+          const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/countries?id=eq.${code}`, {
+            method: 'PATCH',
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify(patch)
+          });
+          if (patchRes.ok) synced++;
+          else results.errors.push(`Sync ${code}: ${patchRes.status}`);
+        }
+        results.countries_synced = synced;
+      } catch (e) {
+        results.errors.push(`Sync countries: ${e.message}`);
+      }
+
+      // Market data — only on real 1st-of-month cron (skip when ?run_prices=1)
+      // NOTE: this block still uses Llama hallucination (legacy from before Phase C).
+      // Will be replaced with real source in a future task.
+      if (isFirstOfMonth) for (const country of topCountries) {
         try {
           const query = encodeURIComponent(`${country.name} heat pump sales 2025 2026 units market`);
           const completion = await groq.chat.completions.create({
@@ -251,7 +517,8 @@ module.exports = async function handler(req, res) {
       countries_checked: topCountries.length,
       critical_alerts: results.alerts,
       email_alert: results.email_alert || null,
-      monthly_run: isFirstOfMonth,
+      monthly_run: runMonthly,
+      forced_run: forcePrices,
       errors: results.errors
     });
 
