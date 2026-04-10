@@ -94,109 +94,301 @@ footer{text-align:center;padding:20px 0;border-top:1px solid var(--glass-b);colo
 </div>
 
 <footer>
-  <p>HP Subsidy Monitor · Source: Eurostat H1 2025, Ofgem, GlobalPetrolPrices</p>
+  <p>HP Subsidy Monitor · Auto-updated 1× per month from Eurostat (EU+Norway) · gov.uk DESNZ (UK) · ElCom (Switzerland)</p>
   <p style="margin-top:4px;"><a href="/impressum.html">Impressum</a> · <a href="/datenschutz.html">Datenschutz</a></p>
 </footer>
 
 <script>
-const P=[
-  {n:"Germany",f:"🇩🇪",e:0.384,ga:0.122,outlook:"€6.5B government grid subsidy in 2026 may cut electricity prices ~16%.",news:[{d:"Mar 2026",t:"Grid fee subsidy approved",ds:"€6.5B federal subsidy for transmission costs in 2026.",u:"https://www.cleanenergywire.org/factsheets/what-german-households-pay-electricity"}],h:[{y:2020,e:0.301,g:0.061},{y:2021,e:0.319,g:0.064},{y:2022,e:0.346,g:0.114},{y:2023,e:0.417,g:0.123},{y:2024,e:0.394,g:0.122},{y:2025,e:0.384,g:0.122}]},
-  {n:"France",f:"🇫🇷",e:0.266,ga:0.130,outlook:"Regulated tariff (TRVE) increased in 2024. Further adjustments expected 2026.",news:[],h:[{y:2020,e:0.190,g:0.079},{y:2021,e:0.193,g:0.078},{y:2022,e:0.212,g:0.108},{y:2023,e:0.232,g:0.119},{y:2024,e:0.280,g:0.126},{y:2025,e:0.266,g:0.130}]},
-  {n:"Netherlands",f:"🇳🇱",e:0.290,ga:0.162,outlook:"Highest gas prices in EU. Grid congestion may push electricity costs.",news:[{d:"2026",t:"Grid congestion surcharges discussed",ds:"Network operators considering congestion pricing.",u:"https://www.rvo.nl/subsidies-financiering/isde"}],h:[{y:2020,e:0.127,g:0.101},{y:2021,e:0.119,g:0.107},{y:2022,e:0.201,g:0.174},{y:2023,e:0.370,g:0.171},{y:2024,e:0.310,g:0.158},{y:2025,e:0.290,g:0.162}]},
-  {n:"UK",f:"🇬🇧",e:0.285,ga:0.067,outlook:"Highest elec/gas ratio (4.28x) in tracked countries. Makes HP economics challenging.",news:[{d:"Apr 2026",t:"Ofgem Q2 cap set",ds:"Energy price cap at £1,568/yr for typical household.",u:"https://www.ofgem.gov.uk/check-if-energy-price-cap-affects-you"}],h:[{y:2020,e:0.208,g:0.045},{y:2021,e:0.228,g:0.048},{y:2022,e:0.340,g:0.103},{y:2023,e:0.340,g:0.103},{y:2024,e:0.281,g:0.069},{y:2025,e:0.285,g:0.067}]},
-  {n:"Italy",f:"🇮🇹",e:0.329,ga:0.124,outlook:"Electricity prices recovering after 2024 dip. Gas stable.",news:[],h:[{y:2020,e:0.222,g:0.090},{y:2021,e:0.229,g:0.084},{y:2022,e:0.322,g:0.132},{y:2023,e:0.338,g:0.117},{y:2024,e:0.295,g:0.120},{y:2025,e:0.329,g:0.124}]},
-  {n:"Spain",f:"🇪🇸",e:0.230,ga:0.095,outlook:"Moderate prices. Solar growth helping to reduce wholesale costs.",news:[],h:[{y:2020,e:0.210,g:0.075},{y:2021,e:0.225,g:0.075},{y:2022,e:0.280,g:0.110},{y:2023,e:0.260,g:0.100},{y:2024,e:0.240,g:0.098},{y:2025,e:0.230,g:0.095}]},
-  {n:"Poland",f:"🇵🇱",e:0.256,ga:0.050,outlook:"Highest ratio in EU (5.12x). Very cheap gas makes HP economics difficult.",news:[{d:"2026",t:"Energy price shields ending",ds:"Government price caps to be phased out, may increase household costs.",u:"https://www.cleanenergywire.org/news"}],h:[{y:2020,e:0.139,g:0.040},{y:2021,e:0.140,g:0.038},{y:2022,e:0.158,g:0.047},{y:2023,e:0.184,g:0.052},{y:2024,e:0.213,g:0.049},{y:2025,e:0.256,g:0.050}]},
-  {n:"Austria",f:"🇦🇹",e:0.280,ga:0.110,outlook:"Prices normalizing after 2022-23 spike.",news:[],h:[{y:2020,e:0.210,g:0.068},{y:2021,e:0.215,g:0.070},{y:2022,e:0.270,g:0.120},{y:2023,e:0.330,g:0.130},{y:2024,e:0.300,g:0.115},{y:2025,e:0.280,g:0.110}]},
-  {n:"Belgium",f:"🇧🇪",e:0.330,ga:0.120,outlook:"Among highest electricity prices in EU.",news:[],h:[{y:2020,e:0.280,g:0.055},{y:2021,e:0.285,g:0.057},{y:2022,e:0.350,g:0.110},{y:2023,e:0.380,g:0.130},{y:2024,e:0.345,g:0.125},{y:2025,e:0.330,g:0.120}]},
-  {n:"Sweden",f:"🇸🇪",e:0.096,ga:0.213,outlook:"Cheapest electricity in EU. Gas barely used. Excellent HP economics.",news:[],h:[{y:2020,e:0.199,g:0.098},{y:2021,e:0.209,g:0.128},{y:2022,e:0.238,g:0.191},{y:2023,e:0.154,g:0.178},{y:2024,e:0.110,g:0.176},{y:2025,e:0.096,g:0.213}]},
-  {n:"Denmark",f:"🇩🇰",e:0.290,ga:0.120,outlook:"Wind energy expansion may reduce wholesale prices long-term.",news:[],h:[{y:2020,e:0.280,g:0.090},{y:2021,e:0.290,g:0.095},{y:2022,e:0.350,g:0.140},{y:2023,e:0.310,g:0.125},{y:2024,e:0.295,g:0.122},{y:2025,e:0.290,g:0.120}]},
-  {n:"Finland",f:"🇫🇮",e:0.080,ga:null,outlook:"Second cheapest electricity in EU. Gas not used residentially.",news:[],h:[{y:2020,e:0.173,g:null},{y:2021,e:0.175,g:null},{y:2022,e:0.201,g:null},{y:2023,e:0.137,g:null},{y:2024,e:0.089,g:null},{y:2025,e:0.080,g:null}]},
-  {n:"Switzerland",f:"🇨🇭",e:0.270,ga:0.130,outlook:"Stable prices. Canton-level variation.",news:[],h:[{y:2020,e:0.210,g:0.100},{y:2021,e:0.215,g:0.105},{y:2022,e:0.250,g:0.140},{y:2023,e:0.280,g:0.140},{y:2024,e:0.275,g:0.135},{y:2025,e:0.270,g:0.130}]},
-  {n:"Czech Republic",f:"🇨🇿",e:0.350,ga:0.107,outlook:"Highest electricity price in tracked countries.",news:[],h:[{y:2020,e:0.205,g:0.050},{y:2021,e:0.210,g:0.052},{y:2022,e:0.283,g:0.112},{y:2023,e:0.352,g:0.131},{y:2024,e:0.340,g:0.120},{y:2025,e:0.350,g:0.107}]},
-  {n:"Norway",f:"🇳🇴",e:0.124,ga:null,outlook:"Cheapest electricity in tracked. Gas not used residentially.",news:[],h:[{y:2020,e:0.068,g:null},{y:2021,e:0.105,g:null},{y:2022,e:0.205,g:null},{y:2023,e:0.145,g:null},{y:2024,e:0.122,g:null},{y:2025,e:0.124,g:null}]},
-  {n:"Estonia",f:"🇪🇪",e:0.195,ga:0.060,outlook:"Prices normalized after 2022 spike.",news:[],h:[{y:2020,e:0.130,g:0.040},{y:2021,e:0.140,g:0.042},{y:2022,e:0.220,g:0.080},{y:2023,e:0.210,g:0.070},{y:2024,e:0.200,g:0.062},{y:2025,e:0.195,g:0.060}]},
-  {n:"Lithuania",f:"🇱🇹",e:0.225,ga:0.060,outlook:"Baltic prices stabilizing.",news:[],h:[{y:2020,e:0.135,g:0.040},{y:2021,e:0.145,g:0.042},{y:2022,e:0.250,g:0.090},{y:2023,e:0.240,g:0.075},{y:2024,e:0.230,g:0.065},{y:2025,e:0.225,g:0.060}]}
+// =============================================================
+// SUPABASE CONFIG (anon key, RLS allows SELECT only)
+// =============================================================
+const SB_URL='https://eyjlrfoaefleugamcvuo.supabase.co';
+const SB_KEY='sb_publishable_aTjldMpez0BhB1L5ubPuNA_KaOGXG1q';
+
+async function sbGet(table,query=''){
+  const url=`${SB_URL}/rest/v1/${table}${query?'?'+query:''}`;
+  const res=await fetch(url,{headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}});
+  if(!res.ok)throw new Error(`Supabase ${table}: ${res.status}`);
+  return res.json();
+}
+
+// ISO 2-letter → flag emoji
+const FLAG={DE:'🇩🇪',FR:'🇫🇷',NL:'🇳🇱',GB:'🇬🇧',IT:'🇮🇹',ES:'🇪🇸',PL:'🇵🇱',AT:'🇦🇹',BE:'🇧🇪',SE:'🇸🇪',DK:'🇩🇰',FI:'🇫🇮',CH:'🇨🇭',CZ:'🇨🇿',NO:'🇳🇴',EE:'🇪🇪',LT:'🇱🇹'};
+
+// Source key → display info (used by table Source column)
+const SRC_INFO={
+  'eurostat':{n:'Eurostat',u:'https://ec.europa.eu/eurostat/databrowser/view/nrg_pc_204/default/table',t:'Eurostat NRG_PC_204 — Electricity prices for household consumers (official EU source, monthly cron pull)'},
+  'gov-uk-desnz':{n:'gov.uk',u:'https://www.gov.uk/government/statistical-data-sets/international-domestic-energy-prices',t:'UK DESNZ — Domestic electricity & gas prices in IEA (official UK government, monthly cron pull)'},
+  'elcom':{n:'ElCom',u:'https://www.strompreis.elcom.admin.ch/',t:'ElCom — Swiss Federal Electricity Commission (official CH regulator, monthly cron pull)'},
+  'manual-legacy':{n:'—',u:'',t:'Historical legacy value (will be replaced on next monthly cron run)'}
+};
+
+// =============================================================
+// FALLBACK DATA — only used if Supabase is unreachable
+// =============================================================
+const FALLBACK_P=[
+  {code:'DE',n:'Germany',f:'🇩🇪',src:'manual-legacy',e:0.384,ga:0.122,outlook:'',news:[],h:[{y:2020,e:0.301,g:0.061},{y:2021,e:0.319,g:0.064},{y:2022,e:0.346,g:0.114},{y:2023,e:0.417,g:0.123},{y:2024,e:0.394,g:0.122},{y:2025,e:0.384,g:0.122}]},
+  {code:'FR',n:'France',f:'🇫🇷',src:'manual-legacy',e:0.266,ga:0.130,outlook:'',news:[],h:[{y:2020,e:0.190,g:0.079},{y:2021,e:0.193,g:0.078},{y:2022,e:0.212,g:0.108},{y:2023,e:0.232,g:0.119},{y:2024,e:0.280,g:0.126},{y:2025,e:0.266,g:0.130}]},
+  {code:'NL',n:'Netherlands',f:'🇳🇱',src:'manual-legacy',e:0.290,ga:0.162,outlook:'',news:[],h:[{y:2020,e:0.127,g:0.101},{y:2021,e:0.119,g:0.107},{y:2022,e:0.201,g:0.174},{y:2023,e:0.370,g:0.171},{y:2024,e:0.310,g:0.158},{y:2025,e:0.290,g:0.162}]},
+  {code:'GB',n:'UK',f:'🇬🇧',src:'manual-legacy',e:0.285,ga:0.067,outlook:'',news:[],h:[{y:2020,e:0.208,g:0.045},{y:2021,e:0.228,g:0.048},{y:2022,e:0.340,g:0.103},{y:2023,e:0.340,g:0.103},{y:2024,e:0.281,g:0.069},{y:2025,e:0.285,g:0.067}]},
+  {code:'IT',n:'Italy',f:'🇮🇹',src:'manual-legacy',e:0.329,ga:0.124,outlook:'',news:[],h:[{y:2020,e:0.222,g:0.090},{y:2021,e:0.229,g:0.084},{y:2022,e:0.322,g:0.132},{y:2023,e:0.338,g:0.117},{y:2024,e:0.295,g:0.120},{y:2025,e:0.329,g:0.124}]},
+  {code:'ES',n:'Spain',f:'🇪🇸',src:'manual-legacy',e:0.230,ga:0.095,outlook:'',news:[],h:[{y:2020,e:0.210,g:0.075},{y:2021,e:0.225,g:0.075},{y:2022,e:0.280,g:0.110},{y:2023,e:0.260,g:0.100},{y:2024,e:0.240,g:0.098},{y:2025,e:0.230,g:0.095}]},
+  {code:'PL',n:'Poland',f:'🇵🇱',src:'manual-legacy',e:0.256,ga:0.050,outlook:'',news:[],h:[{y:2020,e:0.139,g:0.040},{y:2021,e:0.140,g:0.038},{y:2022,e:0.158,g:0.047},{y:2023,e:0.184,g:0.052},{y:2024,e:0.213,g:0.049},{y:2025,e:0.256,g:0.050}]},
+  {code:'AT',n:'Austria',f:'🇦🇹',src:'manual-legacy',e:0.280,ga:0.110,outlook:'',news:[],h:[{y:2020,e:0.210,g:0.068},{y:2021,e:0.215,g:0.070},{y:2022,e:0.270,g:0.120},{y:2023,e:0.330,g:0.130},{y:2024,e:0.300,g:0.115},{y:2025,e:0.280,g:0.110}]},
+  {code:'BE',n:'Belgium',f:'🇧🇪',src:'manual-legacy',e:0.330,ga:0.120,outlook:'',news:[],h:[{y:2020,e:0.280,g:0.055},{y:2021,e:0.285,g:0.057},{y:2022,e:0.350,g:0.110},{y:2023,e:0.380,g:0.130},{y:2024,e:0.345,g:0.125},{y:2025,e:0.330,g:0.120}]},
+  {code:'SE',n:'Sweden',f:'🇸🇪',src:'manual-legacy',e:0.096,ga:0.213,outlook:'',news:[],h:[{y:2020,e:0.199,g:0.098},{y:2021,e:0.209,g:0.128},{y:2022,e:0.238,g:0.191},{y:2023,e:0.154,g:0.178},{y:2024,e:0.110,g:0.176},{y:2025,e:0.096,g:0.213}]},
+  {code:'DK',n:'Denmark',f:'🇩🇰',src:'manual-legacy',e:0.290,ga:0.120,outlook:'',news:[],h:[{y:2020,e:0.280,g:0.090},{y:2021,e:0.290,g:0.095},{y:2022,e:0.350,g:0.140},{y:2023,e:0.310,g:0.125},{y:2024,e:0.295,g:0.122},{y:2025,e:0.290,g:0.120}]},
+  {code:'FI',n:'Finland',f:'🇫🇮',src:'manual-legacy',e:0.080,ga:null,outlook:'',news:[],h:[{y:2020,e:0.173,g:null},{y:2021,e:0.175,g:null},{y:2022,e:0.201,g:null},{y:2023,e:0.137,g:null},{y:2024,e:0.089,g:null},{y:2025,e:0.080,g:null}]},
+  {code:'CH',n:'Switzerland',f:'🇨🇭',src:'manual-legacy',e:0.270,ga:0.130,outlook:'',news:[],h:[{y:2020,e:0.210,g:0.100},{y:2021,e:0.215,g:0.105},{y:2022,e:0.250,g:0.140},{y:2023,e:0.280,g:0.140},{y:2024,e:0.275,g:0.135},{y:2025,e:0.270,g:0.130}]},
+  {code:'CZ',n:'Czech Republic',f:'🇨🇿',src:'manual-legacy',e:0.350,ga:0.107,outlook:'',news:[],h:[{y:2020,e:0.205,g:0.050},{y:2021,e:0.210,g:0.052},{y:2022,e:0.283,g:0.112},{y:2023,e:0.352,g:0.131},{y:2024,e:0.340,g:0.120},{y:2025,e:0.350,g:0.107}]},
+  {code:'NO',n:'Norway',f:'🇳🇴',src:'manual-legacy',e:0.124,ga:null,outlook:'',news:[],h:[{y:2020,e:0.068,g:null},{y:2021,e:0.105,g:null},{y:2022,e:0.205,g:null},{y:2023,e:0.145,g:null},{y:2024,e:0.122,g:null},{y:2025,e:0.124,g:null}]},
+  {code:'EE',n:'Estonia',f:'🇪🇪',src:'manual-legacy',e:0.195,ga:0.060,outlook:'',news:[],h:[{y:2020,e:0.130,g:0.040},{y:2021,e:0.140,g:0.042},{y:2022,e:0.220,g:0.080},{y:2023,e:0.210,g:0.070},{y:2024,e:0.200,g:0.062},{y:2025,e:0.195,g:0.060}]},
+  {code:'LT',n:'Lithuania',f:'🇱🇹',src:'manual-legacy',e:0.225,ga:0.060,outlook:'',news:[],h:[{y:2020,e:0.135,g:0.040},{y:2021,e:0.145,g:0.042},{y:2022,e:0.250,g:0.090},{y:2023,e:0.240,g:0.075},{y:2024,e:0.230,g:0.065},{y:2025,e:0.225,g:0.060}]}
 ];
 
-const sel=document.getElementById('sel');
-P.forEach(c=>{const o=document.createElement('option');o.value=c.n;o.textContent=c.f+' '+c.n;sel.appendChild(o);});
+// =============================================================
+// STATE
+// =============================================================
+let P = FALLBACK_P;       // active dataset (starts as fallback, replaced by Supabase data)
+let LAST_UPDATED = null;  // ISO timestamp from Supabase max(updated_at)
+
+// =============================================================
+// UI SETUP
+// =============================================================
+const sel = document.getElementById('sel');
+
+function fillSelect(){
+  sel.innerHTML = '';
+  P.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.n;
+    o.textContent = (c.f||'') + ' ' + c.n;
+    sel.appendChild(o);
+  });
+}
 
 let chart;
 function update(){
-  const c=P.find(p=>p.n===sel.value);if(!c)return;
-  const labels=c.h.map(h=>h.y);
-  const ratio=c.ga?c.e/c.ga:null;
+  const c = P.find(p => p.n === sel.value);
+  if (!c) return;
 
-  document.getElementById('sv-e').textContent='€'+c.e.toFixed(3);
-  document.getElementById('sv-g').textContent=c.ga?'€'+c.ga.toFixed(3):'N/A';
-  document.getElementById('sv-g').style.color=c.ga?'var(--green)':'var(--dim)';
-  document.getElementById('sv-r').textContent=ratio?ratio.toFixed(2)+'x':'N/A';
-  document.getElementById('sv-r').style.color=ratio&&ratio>3.5?'var(--red)':ratio&&ratio>2.5?'var(--yellow)':'var(--green)';
-  document.getElementById('sv-rsub').textContent=ratio?(ratio<3?'Favorable for HP':'High ratio — COP needs >'+ratio.toFixed(1)):'';
+  // ===== AUTO LAST-5-YEARS WINDOW =====
+  // When Eurostat publishes 2026 → chart automatically shifts to 2022-2026, drops 2021.
+  // No manual update ever needed.
+  const last5 = c.h.slice(-5);
+  const labels = last5.map(h => h.y);
 
-  document.getElementById('outlook-box').innerHTML=`<p><strong>Outlook:</strong> ${c.outlook}</p>`;
+  const ratio = (c.e && c.ga) ? c.e / c.ga : null;
+  document.getElementById('sv-e').textContent = c.e ? '€' + c.e.toFixed(3) : 'N/A';
+  document.getElementById('sv-g').textContent = c.ga ? '€' + c.ga.toFixed(3) : 'N/A';
+  document.getElementById('sv-g').style.color = c.ga ? 'var(--green)' : 'var(--dim)';
+  document.getElementById('sv-r').textContent = ratio ? ratio.toFixed(2) + 'x' : 'N/A';
+  document.getElementById('sv-r').style.color = ratio && ratio > 3.5 ? 'var(--red)' : ratio && ratio > 2.5 ? 'var(--yellow)' : 'var(--green)';
+  document.getElementById('sv-rsub').textContent = ratio ? (ratio < 3 ? 'Favorable for HP' : 'High ratio — COP needs >' + ratio.toFixed(1)) : '';
 
-  let nh='';
-  if(c.news.length){c.news.forEach(n=>{nh+=`<div class="gc news-card"><div class="n-meta">${n.d}</div><div class="n-title">${n.t}</div><div class="n-desc">${n.ds}</div>${n.u?`<div style="margin-top:4px;"><a href="${n.u}" target="_blank" style="font-size:0.72rem;color:var(--accent);">Source →</a></div>`:''}</div>`;});}
-  document.getElementById('news-box').innerHTML=nh;
+  document.getElementById('outlook-box').innerHTML = c.outlook
+    ? `<p><strong>Outlook:</strong> ${c.outlook}</p>`
+    : `<p style="color:var(--dim);font-size:0.78rem;">No specific outlook for this country yet.</p>`;
 
-  if(chart)chart.destroy();
-  const isDark=(document.documentElement.getAttribute('data-theme')||'dark')==='dark';
-  const gridC=isDark?'rgba(100,116,139,0.2)':'rgba(180,195,215,0.3)';
-  const lblC=isDark?'#a8b5c8':'#475569';
-  const ds=[{label:'Electricity (€/kWh)',data:c.h.map(h=>h.e),borderColor:'#38bdf8',backgroundColor:'rgba(56,189,248,0.1)',fill:true,tension:0.3,borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#38bdf8'}];
-  if(c.h[0].g!==null)ds.push({label:'Gas (€/kWh)',data:c.h.map(h=>h.g),borderColor:'#fb923c',backgroundColor:'rgba(251,146,60,0.1)',fill:true,tension:0.3,borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#fb923c'});
+  let nh = '';
+  if (c.news && c.news.length) {
+    c.news.forEach(n => {
+      nh += `<div class="gc news-card"><div class="n-meta">${n.d||''}</div><div class="n-title">${n.t||''}</div><div class="n-desc">${n.ds||''}</div>${n.u?`<div style="margin-top:4px;"><a href="${n.u}" target="_blank" style="font-size:0.72rem;color:var(--accent);">Source →</a></div>`:''}</div>`;
+    });
+  }
+  document.getElementById('news-box').innerHTML = nh;
 
-  chart=new Chart(document.getElementById('chart'),{type:'line',data:{labels,datasets:ds},options:{
-    responsive:true,
-    plugins:{legend:{labels:{color:lblC,font:{size:12},usePointStyle:true}}},
-    scales:{x:{grid:{color:gridC},ticks:{color:lblC,font:{size:11}}},y:{grid:{color:gridC},ticks:{color:lblC,font:{size:11},callback:v=>'€'+v.toFixed(2)},min:0}}
-  }});
+  if (chart) chart.destroy();
+  const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
+  const gridC = isDark ? 'rgba(100,116,139,0.2)' : 'rgba(180,195,215,0.3)';
+  const lblC = isDark ? '#a8b5c8' : '#475569';
+  const ds = [{label:'Electricity (€/kWh)',data:last5.map(h=>h.e),borderColor:'#38bdf8',backgroundColor:'rgba(56,189,248,0.1)',fill:true,tension:0.3,borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#38bdf8'}];
+  if (last5.some(h => h.g != null)) {
+    ds.push({label:'Gas (€/kWh)',data:last5.map(h=>h.g),borderColor:'#fb923c',backgroundColor:'rgba(251,146,60,0.1)',fill:true,tension:0.3,borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#fb923c'});
+  }
+
+  chart = new Chart(document.getElementById('chart'), {
+    type: 'line',
+    data: { labels, datasets: ds },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: lblC, font: { size: 12 }, usePointStyle: true } } },
+      scales: {
+        x: { grid: { color: gridC }, ticks: { color: lblC, font: { size: 11 } } },
+        y: { grid: { color: gridC }, ticks: { color: lblC, font: { size: 11 }, callback: v => '€' + v.toFixed(2) }, min: 0 }
+      }
+    }
+  });
 }
 
-// Source mapping — official primary sources for current electricity prices
-const SRC={
-  Eurostat:{n:'Eurostat',u:'https://ec.europa.eu/eurostat/databrowser/view/nrg_pc_204/default/table',t:'Eurostat NRG_PC_204 — Electricity prices for household consumers, H1 2025 (official EU source)'},
-  Ofgem:{n:'Ofgem',u:'https://www.ofgem.gov.uk/energy-policy-and-regulation/policy-and-regulatory-programmes/default-tariff-cap-energy-price-cap',t:'Ofgem — UK Default Tariff Cap (official UK regulator)'},
-  SSB:{n:'SSB',u:'https://www.ssb.no/en/energi-og-industri/energi/statistikk/elektrisitetspriser',t:'Statistics Norway — Electricity prices (official NO statistics agency)'},
-  ElCom:{n:'ElCom',u:'https://www.strompreis.elcom.admin.ch/',t:'ElCom — Swiss Federal Electricity Commission (official CH regulator)'}
-};
-const SRC_BY={UK:'Ofgem',Norway:'SSB',Switzerland:'ElCom'}; // default = Eurostat
-
-// Table
+// =============================================================
+// TABLE — Source column reads from each country's `src` field
+// =============================================================
 function renderPT(){
-  const all=[...P].sort((a,b)=>b.e-a.e);
-  document.getElementById('pt').innerHTML=all.map(c=>{
-    const r=c.ga?c.e/c.ga:null;
-    const rc=r?r>3.5?'color:var(--red)':r>2.5?'color:var(--yellow)':'color:var(--green)':'';
-    const s=SRC[SRC_BY[c.n]||'Eurostat'];
-    return`<tr style="cursor:pointer;" onclick="sel.value='${c.n}';update();window.scrollTo({top:0,behavior:'smooth'});">
-      <td style="font-weight:500;">${c.f} ${c.n}</td>
-      <td style="font-family:Menlo,Consolas,monospace;">€${c.e.toFixed(3)}</td>
-      <td style="font-family:Menlo,Consolas,monospace;">${c.ga?'€'+c.ga.toFixed(3):'N/A'}</td>
-      <td style="font-family:Menlo,Consolas,monospace;${rc}">${r?r.toFixed(2)+'x':'N/A'}</td>
-      <td><a href="${s.u}" target="_blank" rel="noopener" title="${s.t}" onclick="event.stopPropagation();" style="font-size:0.7rem;color:var(--accent);font-weight:500;">${s.n} ↗</a></td>
+  const all = [...P].sort((a, b) => (b.e || 0) - (a.e || 0));
+  document.getElementById('pt').innerHTML = all.map(c => {
+    const r = (c.e && c.ga) ? c.e / c.ga : null;
+    const rc = r ? (r > 3.5 ? 'color:var(--red)' : r > 2.5 ? 'color:var(--yellow)' : 'color:var(--green)') : '';
+    const s = SRC_INFO[c.src] || SRC_INFO['manual-legacy'];
+    const srcCell = s.u
+      ? `<a href="${s.u}" target="_blank" rel="noopener" title="${s.t}" onclick="event.stopPropagation();" style="font-size:0.7rem;color:var(--accent);font-weight:500;">${s.n} ↗</a>`
+      : `<span title="${s.t}" style="font-size:0.7rem;color:var(--dim);">${s.n}</span>`;
+    return `<tr style="cursor:pointer;" onclick="sel.value='${c.n}';update();window.scrollTo({top:0,behavior:'smooth'});">
+      <td style="font-weight:500;">${c.f||''} ${c.n}</td>
+      <td style="font-family:Menlo,Consolas,monospace;">${c.e ? '€' + c.e.toFixed(3) : 'N/A'}</td>
+      <td style="font-family:Menlo,Consolas,monospace;">${c.ga ? '€' + c.ga.toFixed(3) : 'N/A'}</td>
+      <td style="font-family:Menlo,Consolas,monospace;${rc}">${r ? r.toFixed(2) + 'x' : 'N/A'}</td>
+      <td>${srcCell}</td>
     </tr>`;
   }).join('');
 }
-renderPT();
 
-let ptSc=-1,ptSa=true;
+let ptSc = -1, ptSa = true;
 function sortPT(col){
-  const tb=document.getElementById('pt');const rows=[...tb.querySelectorAll('tr')];
-  if(ptSc===col)ptSa=!ptSa;else{ptSc=col;ptSa=true;}
-  rows.sort((a,b)=>{let av=a.cells[col].textContent.trim(),bv=b.cells[col].textContent.trim();
-    if(col>0){av=parseFloat(av.replace(/[^0-9.]/g,'')||0);bv=parseFloat(bv.replace(/[^0-9.]/g,'')||0);return ptSa?av-bv:bv-av;}
-    return ptSa?av.localeCompare(bv):bv.localeCompare(av);});
-  rows.forEach(r=>tb.appendChild(r));
+  const tb = document.getElementById('pt');
+  const rows = [...tb.querySelectorAll('tr')];
+  if (ptSc === col) ptSa = !ptSa; else { ptSc = col; ptSa = true; }
+  rows.sort((a, b) => {
+    let av = a.cells[col].textContent.trim(), bv = b.cells[col].textContent.trim();
+    if (col > 0) {
+      av = parseFloat(av.replace(/[^0-9.]/g, '') || 0);
+      bv = parseFloat(bv.replace(/[^0-9.]/g, '') || 0);
+      return ptSa ? av - bv : bv - av;
+    }
+    return ptSa ? av.localeCompare(bv) : bv.localeCompare(av);
+  });
+  rows.forEach(r => tb.appendChild(r));
 }
 
-// toggleTheme handled by shared.js
-function onThemeChange(){update();}
-(function(){const s=localStorage.getItem('hp-theme');if(s){document.documentElement.setAttribute('data-theme',s);const l=document.getElementById('tl');if(l)l.textContent=s==='dark'?'Light':'Dark';}})();
+// =============================================================
+// AGGREGATE: raw energy_prices rows → per-country annual format
+// Period priority: average(H1+H2) → H2 → H1 → A
+// =============================================================
+function aggregateAnnual(rows){
+  const byC = {};
+  for (const r of rows) {
+    if (!byC[r.country_code]) byC[r.country_code] = { code: r.country_code, name: r.country_name, years: {} };
+    const c = byC[r.country_code];
+    if (!c.years[r.year]) c.years[r.year] = {};
+    c.years[r.year][r.period] = {
+      e: r.electricity_eur_kwh != null ? Number(r.electricity_eur_kwh) : null,
+      g: r.gas_eur_kwh != null ? Number(r.gas_eur_kwh) : null,
+      src: r.source
+    };
+  }
+  const result = [];
+  for (const c of Object.values(byC)) {
+    const years = Object.keys(c.years).map(Number).sort((a, b) => a - b);
+    const h = [];
+    let lastSrc = null;
+    for (const year of years) {
+      const yd = c.years[year];
+      let e = null, g = null, src = null;
+      if (yd.H1 && yd.H2) {
+        e = (yd.H1.e != null && yd.H2.e != null) ? (yd.H1.e + yd.H2.e) / 2 : (yd.H2.e ?? yd.H1.e);
+        g = (yd.H1.g != null && yd.H2.g != null) ? (yd.H1.g + yd.H2.g) / 2 : (yd.H2.g ?? yd.H1.g);
+        src = yd.H2.src || yd.H1.src;
+      } else if (yd.H2) { e = yd.H2.e; g = yd.H2.g; src = yd.H2.src; }
+      else if (yd.H1)   { e = yd.H1.e; g = yd.H1.g; src = yd.H1.src; }
+      else if (yd.A)    { e = yd.A.e;  g = yd.A.g;  src = yd.A.src;  }
+      h.push({ y: year, e, g });
+      // Track non-legacy source as preferred
+      if (src && src !== 'manual-legacy') lastSrc = src;
+      else if (src && !lastSrc) lastSrc = src;
+    }
+    const latest = h[h.length - 1] || { e: null, g: null };
+    result.push({
+      code: c.code,
+      n: c.name,
+      f: FLAG[c.code] || '',
+      e: latest.e,
+      ga: latest.g,
+      h,
+      src: lastSrc || 'manual-legacy'
+    });
+  }
+  return result;
+}
 
+// =============================================================
+// LOAD FRESH DATA from Supabase, fall back gracefully on error
+// =============================================================
+async function loadFromDB(){
+  try {
+    const [pricesRows, countriesRows, newsRows] = await Promise.all([
+      sbGet('energy_prices', 'order=year.asc'),
+      sbGet('countries', 'select=id,name,outlook,sort_weight,market_size'),
+      sbGet('news', 'order=created_at.desc&limit=200')
+    ]);
+
+    // Lookup tables
+    const outlookByCode = {};
+    const sortByCode = {};
+    for (const c of countriesRows) {
+      outlookByCode[c.id] = c.outlook || '';
+      sortByCode[c.id] = c.sort_weight || c.market_size || 0;
+    }
+
+    // Group news by country (max 5 per country, newest first — already sorted by created_at desc)
+    const newsByCode = {};
+    for (const n of newsRows) {
+      const code = n.country_id;
+      if (!newsByCode[code]) newsByCode[code] = [];
+      if (newsByCode[code].length < 5) {
+        newsByCode[code].push({
+          d: n.date || '',
+          t: n.title || '',
+          ds: n.description || '',
+          u: n.source_url || ''
+        });
+      }
+    }
+
+    // Aggregate energy_prices into per-country annual format
+    const aggregated = aggregateAnnual(pricesRows);
+
+    // Sort by sort_weight (mirrors main dashboard)
+    aggregated.sort((a, b) => (sortByCode[b.code] || 0) - (sortByCode[a.code] || 0));
+
+    // Attach outlook + news from countries/news tables
+    for (const c of aggregated) {
+      c.outlook = outlookByCode[c.code] || '';
+      c.news = newsByCode[c.code] || [];
+    }
+
+    // Track latest update timestamp
+    if (pricesRows.length) {
+      LAST_UPDATED = pricesRows.reduce((max, r) => (r.updated_at > max ? r.updated_at : max), '');
+    }
+
+    // Replace fallback with real data and re-render everything
+    P = aggregated;
+    fillSelect();
+    update();
+    renderPT();
+    console.log('✅ energy-prices: loaded from Supabase —', P.length, 'countries,', pricesRows.length, 'price rows, last updated', LAST_UPDATED);
+  } catch (e) {
+    console.warn('⚠ energy-prices: Supabase unavailable, using fallback data', e);
+    // P is already FALLBACK_P, so the page is still functional
+  }
+}
+
+// =============================================================
+// THEME — chart re-renders on toggle (called by shared.js)
+// =============================================================
+function onThemeChange(){ update(); }
+(function(){
+  const s = localStorage.getItem('hp-theme');
+  if (s) document.documentElement.setAttribute('data-theme', s);
+})();
+
+// =============================================================
+// INITIAL RENDER (fallback first), then load fresh data async
+// =============================================================
+fillSelect();
 update();
+renderPT();
+loadFromDB();
 lucide.createIcons();
 </script>
 </body>
