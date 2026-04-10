@@ -564,12 +564,17 @@ async function loadFromDB(){
           subs:subsStr||undefined
         });
       });
-      // Map DB news to NEWS format
+      // Map DB news to NEWS format — max 5 newest per country
+      // (dbNews is already sorted by created_at desc, so the first 5 per country = the 5 newest)
       NEWS.length=0;
+      const newsCount={};
       dbNews.forEach(n=>{
-        const country=dbCountries.find(c=>c.id===n.country_id);
+        const code=n.country_id;
+        if((newsCount[code]||0)>=5)return; // hard cap: max 5 per country
+        newsCount[code]=(newsCount[code]||0)+1;
+        const country=dbCountries.find(c=>c.id===code);
         NEWS.push({
-          c:country?country.name:n.country_id,
+          c:country?country.name:code,
           ms:country?(country.sort_weight||country.market_size||0):0,
           d:n.date||'',t:n.title||'',ds:n.description||'',i:n.impact||'info',
           src:n.source_name?[{n:n.source_name,u:n.source_url||''}]:[]
