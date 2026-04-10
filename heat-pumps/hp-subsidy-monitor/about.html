@@ -75,14 +75,18 @@ footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid v
   <table>
     <thead><tr><th>Data</th><th>Frequency</th><th>Method</th><th>Source</th></tr></thead>
     <tbody>
-      <tr><td><strong>News & Signals</strong></td><td><span class="tag t-d">Daily 08:00 CET</span></td><td>Google News RSS → Groq/Llama AI summary</td><td>Google News, gov portals</td></tr>
-      <tr><td><strong>Subsidy detection</strong></td><td><span class="tag t-d">Daily 08:00 CET</span></td><td>Google News RSS → AI analysis</td><td>Government portals</td></tr>
-      <tr><td><strong>Energy prices</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Automated API pull</td><td>Eurostat, Ofgem</td></tr>
-      <tr><td><strong>Subsidy amounts</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Automated check</td><td>Government portals</td></tr>
-      <tr><td><strong>Market data</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Automated + Refresh button</td><td>EHPA, BWP, national assoc.</td></tr>
-      <tr><td><strong>HP penetration</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Calculation</td><td>EHPA + Eurostat</td></tr>
+      <tr><td><strong>News & Signals</strong></td><td><span class="tag t-d">Daily 08:00 CET</span></td><td>Google News RSS in 25 languages → Llama summary (max 5/country)</td><td>Google News, government portals</td></tr>
+      <tr><td><strong>Electricity prices</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Fully automated parser</td><td>Eurostat NRG_PC_204 (15 EU+NO), gov.uk DESNZ (UK), ElCom SPARQL (CH)</td></tr>
+      <tr><td><strong>Gas prices</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Fully automated parser</td><td>Eurostat NRG_PC_202 (12 EU), gov.uk DESNZ (UK). NA where no residential gas market (NO, FI, IS, CH).</td></tr>
+      <tr><td><strong>Elec/Gas ratio</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Computed automatically</td><td>Derived from electricity ÷ gas</td></tr>
+      <tr><td><strong>Subsidy amounts</strong></td><td><span class="tag t-d">Daily detection</span></td><td>Llama extracts numeric updates from news → pending review queue → admin approval</td><td>News articles + government portals</td></tr>
+      <tr><td><strong>Market size</strong></td><td><span class="tag t-d">Daily detection</span></td><td>Llama extracts statistical mentions from news → pending review queue → admin approval</td><td>News (Cleanenergywire, EHPA press releases, national associations)</td></tr>
+      <tr><td><strong>HP penetration</strong></td><td><span class="tag t-o">Semi-automatic</span></td><td>Computed from market_size when cumulative installed base is mentioned in news; otherwise manual</td><td>EHPA cumulative figures (paywalled — extracted via news mentions)</td></tr>
     </tbody>
   </table>
+  <p style="margin-top:12px;font-size:0.78rem;color:var(--dim);"><strong>Single source of truth:</strong> All energy price numbers across the dashboard, country pages, and the Electricity Prices page are read from the same Supabase <code>energy_prices</code> table, refreshed monthly by the cron job. The dashboard's "current price" stat shows the H1+H2 average for the latest year, identical everywhere.</p>
+  <p style="margin-top:8px;font-size:0.78rem;color:var(--dim);"><strong>Why monthly for prices:</strong> Eurostat publishes electricity & gas prices semi-annually (H1 in November, H2 in May/June). The cron checks on the 1st of each month — most months it's a no-op, but when Eurostat releases new data, the site updates within 24 hours, automatically.</p>
+  <p style="margin-top:8px;font-size:0.78rem;color:var(--dim);"><strong>Why manual approval for subsidies/market_size:</strong> No public API exists for these (EHPA reports are paywalled, government subsidy programs change unpredictably). Llama reads news daily and queues suggested updates with confidence scores. An admin reviews and approves, preventing AI hallucinations from corrupting the dataset.</p>
 </div>
 
 <h2><i data-lucide="cpu" style="width:18px;height:18px;color:var(--accent);"></i> Technology Stack</h2>
@@ -102,18 +106,20 @@ footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid v
 
 <h2><i data-lucide="flask-conical" style="width:18px;height:18px;color:var(--accent);"></i> Methodology</h2>
 <div class="gc">
-  <p><strong>Market data:</strong> National associations with hydronic-only data are preferred (BWP, Uniclima, SULPU, VWP, HPA, PORT PC, WPA, VPI, FWS). Where only total figures exist (incl. A2A), this is marked.</p>
-  <p><strong>HP Penetration:</strong> installed base ÷ total households × 100%.</p>
-  <p><strong>Energy prices:</strong> Eurostat (H1 2025) for EU. Ofgem for UK. GlobalPetrolPrices for non-EU.</p>
-  <p><strong>Subsidies:</strong> Verified against official government portals. Max available amount shown.</p>
+  <p><strong>Energy prices:</strong> Latest Eurostat H1+H2 average (covering 2500–4999 kWh/year residential band, all taxes included, in EUR). For UK: gov.uk DESNZ "Domestic prices in the IEA" annual data, converted from pence/kWh to EUR via European Central Bank rates. For Switzerland: ElCom national median tariff for category H4 (typical 4500 kWh household), in CHF/kWh, converted via ECB.</p>
+  <p><strong>Market data:</strong> National associations with hydronic-only data are preferred (BWP, Uniclima, SULPU, VWP, HPA, PORT PC, WPA, VPI, FWS). Where only total figures exist (incl. A2A), this is marked. Updates extracted from news articles via Llama, then human-approved.</p>
+  <p><strong>HP penetration:</strong> cumulative installed base ÷ total households × 100%. Cumulative base updated when news articles cite EHPA cumulative figures (e.g., "Germany has 1.6M heat pumps installed").</p>
+  <p><strong>Subsidies:</strong> Verified against official government portals. Max available amount shown. Updates detected from news via Llama, then human-approved before going live.</p>
 </div>
 
 <h2><i data-lucide="link" style="width:18px;height:18px;color:var(--accent);"></i> Energy Price Sources</h2>
 <div class="gc">
   <div class="src-list">
-    🇪🇺 <a href="https://ec.europa.eu/eurostat/web/energy/database" target="_blank">Eurostat — EU Electricity & Gas Prices H1 2025</a><br>
-    🇬🇧 <a href="https://www.ofgem.gov.uk/" target="_blank">Ofgem — UK Energy Price Cap</a><br>
-    ‣ <a href="https://www.globalpetrolprices.com/" target="_blank">GlobalPetrolPrices — Non-EU countries</a>
+    🇪🇺 <a href="https://ec.europa.eu/eurostat/databrowser/view/nrg_pc_204/default/table" target="_blank">Eurostat NRG_PC_204 — Electricity prices, household consumers</a><br>
+    🇪🇺 <a href="https://ec.europa.eu/eurostat/databrowser/view/nrg_pc_202/default/table" target="_blank">Eurostat NRG_PC_202 — Natural gas prices, household consumers</a><br>
+    🇬🇧 <a href="https://www.gov.uk/government/statistical-data-sets/international-domestic-energy-prices" target="_blank">UK DESNZ — Domestic electricity & gas prices in the IEA (QEP 5.5.1, 5.9.1)</a><br>
+    🇨🇭 <a href="https://www.strompreis.elcom.admin.ch/" target="_blank">ElCom — Swiss Federal Electricity Commission median tariff</a><br>
+    💱 <a href="https://www.frankfurter.app/" target="_blank">Frankfurter — ECB official exchange rates (free, no key)</a>
   </div>
 </div>
 
