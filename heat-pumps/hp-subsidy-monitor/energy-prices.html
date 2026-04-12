@@ -186,17 +186,10 @@ function update(){
   document.getElementById('sv-r').style.color = ratio && ratio > 3.5 ? 'var(--red)' : ratio && ratio > 2.5 ? 'var(--yellow)' : 'var(--green)';
   document.getElementById('sv-rsub').textContent = ratio ? (ratio < 3 ? 'Favorable for HP' : 'High ratio — COP needs >' + ratio.toFixed(1)) : '';
 
-  document.getElementById('outlook-box').innerHTML = c.outlook
-    ? `<p><strong>Outlook:</strong> ${c.outlook}</p>`
-    : `<p style="color:var(--dim);font-size:0.78rem;">No specific outlook for this country yet.</p>`;
-
-  let nh = '';
-  if (c.news && c.news.length) {
-    c.news.forEach(n => {
-      nh += `<div class="gc news-card"><div class="n-meta">${n.d||''}</div><div class="n-title">${n.t||''}</div><div class="n-desc">${n.ds||''}</div>${n.u?`<div style="margin-top:4px;"><a href="${n.u}" target="_blank" style="font-size:0.72rem;color:var(--accent);">Source →</a></div>`:''}</div>`;
-    });
-  }
-  document.getElementById('news-box').innerHTML = nh;
+  // Outlook and news removed — this is a pure data page (prices, charts, tables).
+  // Policy outlook and news signals are on the main dashboard.
+  document.getElementById('outlook-box').innerHTML = '';
+  document.getElementById('news-box').innerHTML = '';
 
   if (chart) chart.destroy();
   const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
