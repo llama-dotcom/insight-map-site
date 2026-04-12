@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Landscape — Dashboard</title>
+  <title>AI Landscape — Full catalog of AI systems</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-  <!-- Sticky Header -->
   <header>
     <div class="hdr">
       <div class="hdr-brand">
@@ -21,8 +20,7 @@
         </div>
       </div>
       <ul class="hdr-tabs">
-        <li><a href="index.html" class="hdr-tab">Dashboard</a></li>
-        <li><a href="systems.html" class="hdr-tab">Systems</a></li>
+        <li><a href="index.html" class="hdr-tab">Catalog</a></li>
         <li><a href="synergies.html" class="hdr-tab">Synergies</a></li>
         <li><a href="news.html" class="hdr-tab">News & Events</a></li>
       </ul>
@@ -41,34 +39,70 @@
   <main class="container">
 
     <header class="page-header">
-      <h1>AI Landscape Dashboard</h1>
-      <p>A curated, always-current overview of LLM chatbots and AI coding tools — pricing, popularity, and how to combine them.</p>
+      <h1>AI Landscape</h1>
+      <p>49 AI systems for text generation and coding — clustered, compared, with direct links to each tool. Updated daily.</p>
     </header>
 
-    <!-- KPI Stats -->
-    <div class="stats-grid" id="stats-grid">
-      <div class="loading">Loading data</div>
+    <div class="toolbar">
+      <input type="text" id="search-input" class="search-input" placeholder="Search AI systems, countries, developers...">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="llm">LLM Chatbots</button>
+      <button class="filter-btn" data-filter="coding">Coding Tools</button>
     </div>
 
-    <!-- Top LLM Chatbots -->
-    <section class="section">
+    <section class="section" id="llm-section">
       <h2 class="section__title">
         <span class="icon-box"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
-        Top LLM Chatbots
+        LLM Chatbots
       </h2>
-      <div class="cards-grid" id="top-llms">
-        <div class="loading">Loading</div>
+
+      <div class="tbl-w">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Name</th>
+              <th>Developer</th>
+              <th>Country</th>
+              <th>Free</th>
+              <th>Pro Price</th>
+              <th>Est. Users</th>
+            </tr>
+          </thead>
+          <tbody id="llm-table-body"></tbody>
+        </table>
+      </div>
+
+      <div id="llm-grid">
+        <div class="loading">Loading LLM chatbots</div>
       </div>
     </section>
 
-    <!-- Top Coding Tools -->
-    <section class="section">
+    <section class="section" id="coding-section">
       <h2 class="section__title">
         <span class="icon-box"><svg class="icon" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
-        Top AI Coding Tools
+        AI Coding Tools
       </h2>
-      <div class="cards-grid" id="top-coding">
-        <div class="loading">Loading</div>
+
+      <div class="tbl-w">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Name</th>
+              <th>Developer</th>
+              <th>Country</th>
+              <th>Free</th>
+              <th>Pro Price</th>
+              <th>Est. Users</th>
+            </tr>
+          </thead>
+          <tbody id="coding-table-body"></tbody>
+        </table>
+      </div>
+
+      <div id="coding-grid">
+        <div class="loading">Loading coding tools</div>
       </div>
     </section>
 
