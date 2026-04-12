@@ -70,37 +70,49 @@ footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid v
   <p style="margin-top:10px;"><strong>Excluded:</strong> Air-to-Air reversible heat pumps (split systems, VRF). Where market data includes A2A units, this is clearly marked.</p>
 </div>
 
-<h2><i data-lucide="database" style="width:18px;height:18px;color:var(--accent);"></i> Data Update Frequency</h2>
+<h2><i data-lucide="database" style="width:18px;height:18px;color:var(--accent);"></i> How Data Stays Current</h2>
 <div class="gc">
+  <p style="margin-bottom:14px;">All data on this site is updated automatically via scheduled jobs (Vercel Cron). No manual data entry. Every number links to a verifiable source.</p>
   <table>
     <thead><tr><th>Data</th><th>Frequency</th><th>Method</th><th>Source</th></tr></thead>
     <tbody>
-      <tr><td><strong>News & Signals</strong></td><td><span class="tag t-d">Daily 08:00 CET</span></td><td>Google News RSS in 25 languages → Llama summary (max 5/country)</td><td>Google News, government portals</td></tr>
-      <tr><td><strong>Electricity prices</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Fully automated parser</td><td>Eurostat NRG_PC_204 (15 EU+NO), gov.uk DESNZ (UK), ElCom SPARQL (CH)</td></tr>
-      <tr><td><strong>Gas prices</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Fully automated parser</td><td>Eurostat NRG_PC_202 (12 EU), gov.uk DESNZ (UK). NA where no residential gas market (NO, FI, IS, CH).</td></tr>
-      <tr><td><strong>Elec/Gas ratio</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Computed automatically</td><td>Derived from electricity ÷ gas</td></tr>
-      <tr><td><strong>Subsidy amounts</strong></td><td><span class="tag t-d">Daily detection</span></td><td>Llama extracts numeric updates from news → pending review queue → admin approval</td><td>News articles + government portals</td></tr>
-      <tr><td><strong>Market size</strong></td><td><span class="tag t-d">Daily detection</span></td><td>Llama extracts statistical mentions from news → pending review queue → admin approval</td><td>News (Cleanenergywire, EHPA press releases, national associations)</td></tr>
-      <tr><td><strong>HP penetration</strong></td><td><span class="tag t-o">Semi-automatic</span></td><td>Computed from market_size when cumulative installed base is mentioned in news; otherwise manual</td><td>EHPA cumulative figures (paywalled — extracted via news mentions)</td></tr>
+      <tr><td><strong>News & policy signals</strong></td><td><span class="tag t-d">Daily 08:00 CET</span></td><td>Google News RSS in 25 languages → AI summary (Llama 3.3 70B via Groq). Max 5 articles per country.</td><td>Google News (real-time articles from government portals, industry press, national media)</td></tr>
+      <tr><td><strong>Electricity prices</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Direct JSON API — no AI involved. Fully deterministic.</td><td>Eurostat NRG_PC_204 (29 EU/EFTA countries), gov.uk DESNZ IEA tables (UK), ElCom SPARQL (Switzerland)</td></tr>
+      <tr><td><strong>Gas prices</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Direct JSON API — no AI involved.</td><td>Eurostat NRG_PC_202, gov.uk DESNZ. N/A where no residential gas market (Norway, Finland, Switzerland).</td></tr>
+      <tr><td><strong>Elec / Gas ratio</strong></td><td><span class="tag t-m">Monthly (1st)</span></td><td>Auto-computed: electricity ÷ gas</td><td>Derived from the two rows above</td></tr>
+      <tr><td><strong>Subsidy programs & max amounts</strong></td><td><span class="tag t-m">Monthly (1st–2nd)</span></td><td>AI research via Gemini 2.5 Flash + Google Search grounding. Searches official government sites, extracts program details with breakdown of components. Tiered trust model: gov sources auto-apply; secondary sources require higher confidence + smaller change bounds.</td><td>Official government portals (KfW, MaPrimeRénov, ISDE, BUS, etc.) verified via Google Search</td></tr>
+      <tr><td><strong>Market size (annual HP sales)</strong></td><td><span class="tag t-m">Monthly (1st–2nd)</span></td><td>AI research via Gemini + Google Search. Year-forward rule: only updates if newer year than existing data. If hydronic-only figure unavailable, total is used with an explicit label.</td><td>National HP associations (BWP, Uniclima, SULPU, etc.), EHPA, Eurostat, IEA</td></tr>
     </tbody>
   </table>
-  <p style="margin-top:12px;font-size:0.78rem;color:var(--dim);"><strong>Single source of truth:</strong> All energy price numbers across the dashboard, country pages, and the Electricity Prices page are read from the same Supabase <code>energy_prices</code> table, refreshed monthly by the cron job. The dashboard's "current price" stat shows the H1+H2 average for the latest year, identical everywhere.</p>
-  <p style="margin-top:8px;font-size:0.78rem;color:var(--dim);"><strong>Why monthly for prices:</strong> Eurostat publishes electricity & gas prices semi-annually (H1 in November, H2 in May/June). The cron checks on the 1st of each month — most months it's a no-op, but when Eurostat releases new data, the site updates within 24 hours, automatically.</p>
-  <p style="margin-top:8px;font-size:0.78rem;color:var(--dim);"><strong>Why manual approval for subsidies/market_size:</strong> No public API exists for these (EHPA reports are paywalled, government subsidy programs change unpredictably). Llama reads news daily and queues suggested updates with confidence scores. An admin reviews and approves, preventing AI hallucinations from corrupting the dataset.</p>
+</div>
+
+<h2><i data-lucide="workflow" style="width:18px;height:18px;color:var(--accent);"></i> Automated Pipeline — How It Works</h2>
+<div class="gc">
+  <p style="font-size:0.82rem;color:var(--muted);line-height:1.8;">
+    <strong>Step 1 — Scheduled trigger:</strong> Vercel Cron Jobs automatically call our API endpoints on schedule. No human intervention needed.<br>
+    <strong>Step 2 — Data collection:</strong> Each endpoint fetches data from its designated source. Energy prices come from official statistical APIs (Eurostat, gov.uk, ElCom) — deterministic, no AI. Subsidies and market data come from Gemini AI with Google Search grounding — it reads official government pages and extracts structured data with source URLs.<br>
+    <strong>Step 3 — Validation:</strong> Every update passes through safety checks: year-forward rule (never overwrite newer data with older), sanity bounds (reject unreasonable values), tiered trust (government sources trusted more than secondary), change limits (large swings from secondary sources are blocked).<br>
+    <strong>Step 4 — Database write:</strong> Validated data is written to Supabase (PostgreSQL, EU Frankfurt). Each record stores: value, year, source URL, method note, and timestamp.<br>
+    <strong>Step 5 — Display:</strong> When you open any page, the browser fetches the latest data from Supabase in real-time. All pages read from the same database — identical numbers everywhere. Source links (↗) let you verify any number by clicking through to the official page.
+  </p>
+  <p style="margin-top:10px;font-size:0.78rem;color:var(--dim);"><strong>Scope:</strong> Only hydronic heat pumps (AW, LW, EW, Hybrids) — residential and commercial. Air-to-Air systems are excluded. Where market data includes A2A, this is explicitly labeled.</p>
+  <p style="margin-top:6px;font-size:0.78rem;color:var(--dim);"><strong>Disclaimer:</strong> Subsidy and market data is AI-assisted (Gemini + Google Search). While we verify against official sources and apply multiple safety checks, errors are possible. Always verify critical figures via the source links provided before making financial decisions.</p>
 </div>
 
 <h2><i data-lucide="cpu" style="width:18px;height:18px;color:var(--accent);"></i> Technology Stack</h2>
 <div class="gc">
   <ul>
-    <li><strong>Frontend:</strong> HTML, CSS, JavaScript</li>
+    <li><strong>Frontend:</strong> HTML, CSS, JavaScript (no frameworks)</li>
     <li><strong>Maps:</strong> Leaflet.js + CARTO tiles + world-atlas TopoJSON</li>
     <li><strong>Charts:</strong> Chart.js</li>
-    <li><strong>Database:</strong> Supabase (PostgreSQL, EU Frankfurt)</li>
-    <li><strong>AI News Analysis:</strong> Groq API + Llama 3.3 70B</li>
-    <li><strong>News Source:</strong> Google News RSS (real-time articles)</li>
-    <li><strong>Automation:</strong> Vercel Cron Jobs (daily 08:00 CET)</li>
+    <li><strong>Database:</strong> Supabase (PostgreSQL, EU Frankfurt region)</li>
+    <li><strong>AI — News summaries:</strong> Groq API + Llama 3.3 70B (daily)</li>
+    <li><strong>AI — Subsidy & market research:</strong> Google Gemini 2.5 Flash + Google Search grounding (monthly)</li>
+    <li><strong>Price data APIs:</strong> Eurostat JSON-stat, gov.uk DESNZ XLSX, ElCom SPARQL, ECB Frankfurter</li>
+    <li><strong>News source:</strong> Google News RSS (25 languages, real-time articles)</li>
+    <li><strong>Automation:</strong> Vercel Cron Jobs — daily (news + prices) + monthly (subsidies + market)</li>
     <li><strong>Hosting:</strong> Vercel (auto-deploy from GitHub)</li>
-    <li><strong>Domain:</strong> insight-map.com (Namecheap)</li>
+    <li><strong>Domain:</strong> insight-map.com</li>
   </ul>
 </div>
 
