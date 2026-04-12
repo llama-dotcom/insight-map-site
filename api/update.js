@@ -135,11 +135,42 @@ async function upsertEnergyPrices(SUPABASE_URL, SUPABASE_KEY, rows) {
   return rows.length;
 }
 
-// Country code → display name (Eurostat returns codes; we need names for the table)
-const EU_COUNTRIES = {
-  DE: 'Germany', FR: 'France', NL: 'Netherlands', IT: 'Italy', ES: 'Spain',
-  PL: 'Poland', AT: 'Austria', BE: 'Belgium', SE: 'Sweden', DK: 'Denmark',
-  FI: 'Finland', CZ: 'Czech Republic', EE: 'Estonia', LT: 'Lithuania', NO: 'Norway'
+// Eurostat uses ISO 3166-1 alpha-2 codes EXCEPT for Greece (EL not GR) and UK (UK not GB).
+// We use db_id internally (matches countries.id which is mostly ISO).
+// EUROSTAT_COUNTRIES maps Eurostat geo code → { db_id, name }
+const EUROSTAT_COUNTRIES = {
+  // 25 EU countries + Norway (EFTA, included in NRG_PC_204)
+  DE: { db_id: 'DE', name: 'Germany' },
+  FR: { db_id: 'FR', name: 'France' },
+  NL: { db_id: 'NL', name: 'Netherlands' },
+  BE: { db_id: 'BE', name: 'Belgium' },
+  IT: { db_id: 'IT', name: 'Italy' },
+  SE: { db_id: 'SE', name: 'Sweden' },
+  PL: { db_id: 'PL', name: 'Poland' },
+  ES: { db_id: 'ES', name: 'Spain' },
+  AT: { db_id: 'AT', name: 'Austria' },
+  EL: { db_id: 'GR', name: 'Greece' },              // Eurostat uses EL for Greece
+  CZ: { db_id: 'CZ', name: 'Czech Republic' },
+  DK: { db_id: 'DK', name: 'Denmark' },
+  FI: { db_id: 'FI', name: 'Finland' },
+  SI: { db_id: 'SI', name: 'Slovenia' },
+  RO: { db_id: 'RO', name: 'Romania' },
+  EE: { db_id: 'EE', name: 'Estonia' },
+  HU: { db_id: 'HU', name: 'Hungary' },
+  HR: { db_id: 'HR', name: 'Croatia' },
+  BG: { db_id: 'BG', name: 'Bulgaria' },
+  LT: { db_id: 'LT', name: 'Lithuania' },
+  LV: { db_id: 'LV', name: 'Latvia' },
+  IE: { db_id: 'IE', name: 'Ireland' },
+  LU: { db_id: 'LU', name: 'Luxembourg' },
+  SK: { db_id: 'SK', name: 'Slovakia' },
+  PT: { db_id: 'PT', name: 'Portugal' },
+  NO: { db_id: 'NO', name: 'Norway' },
+  // Western Balkans + Turkey — Eurostat covers these too
+  BA: { db_id: 'BA', name: 'Bosnia-Herzegovina' },
+  RS: { db_id: 'RS', name: 'Serbia-Montenegro' },
+  TR: { db_id: 'TR', name: 'Turkey' }
+  // Not covered by Eurostat: CH (handled by ElCom), GB (handled by DESNZ), UA (manual)
 };
 
 module.exports = async function handler(req, res) {
@@ -260,31 +291,21 @@ module.exports = async function handler(req, res) {
 
         const articleList = articles.map((a, i) => `${i + 1}. "${a.title}" (${a.source}, ${a.date})`).join('\n');
 
-        // Build current-data context for Llama (so it can spot updates vs current values)
-        const currentContext = [
-          country.max_subsidy ? `max_subsidy: €${country.max_subsidy}` : 'max_subsidy: unknown',
-          country.subsidy_program ? `subsidy_program: "${country.subsidy_program}"` : 'subsidy_program: unknown',
-          country.market_size ? `market_size: ${country.market_size}k units/year installed` : 'market_size: unknown'
-        ].join('\n  ');
-
+        // Llama: news summarization only (subsidy/market extraction moved to Gemini cron)
         const completion = await groq.chat.completions.create({
           messages: [
-            { role: 'system', content: 'You analyze real news articles about heat pump policy. Return JSON only. Be conservative — only extract structured data if articles contain clear, specific numeric facts.' },
-            { role: 'user', content: `Real news articles about heat pumps in ${country.name}:\n\n${articleList}\n\nCurrent data we track for ${country.name}:\n  ${currentContext}\n\nDo TWO tasks:\n\nTASK 1 — SUMMARIZE: For each RELEVANT article (subsidies, energy policy, heating regulations), create a summary.\n\nTASK 2 — EXTRACT STRUCTURED UPDATES: If any article contains a SPECIFIC NUMERIC OR FACTUAL UPDATE that would change our tracked data, extract it. Examples:\n- "Germany raised BEG to €25,000" → {data_type:"subsidy_amount", field_name:"max_subsidy", new_value:25000}\n- "Germany installed 350k heat pumps in 2025 (EHPA)" → {data_type:"market_size", field_name:"market_size", new_value:350}\n- "Italy abolished Conto Termico" → {data_type:"subsidy_program", field_name:"subsidy_program", new_value:"ABOLISHED"}\n\nRules:\n- Only extract if the article contains a CLEAR SPECIFIC FACT (not speculation, not vague mentions)\n- new_value must be a number for subsidy_amount/market_size, a string for subsidy_program\n- confidence: 0.9+ for crystal-clear specific facts, 0.6-0.9 for clear but indirect, <0.6 for soft mentions\n- If nothing extractable: extractions: []\n\nReturn:\n{\n  "items": [{"title":"headline max 80 chars","description":"2-3 sentences","impact":"critical|medium|info","original_index":N}],\n  "extractions": [{"original_index":N,"data_type":"subsidy_amount|subsidy_program|market_size","field_name":"max_subsidy|subsidy_program|market_size","new_value":<num or string>,"reasoning":"1 sentence","confidence":0.0-1.0}]\n}\n\nIf nothing relevant: {"items":[],"extractions":[]}` }
+            { role: 'system', content: 'You analyze real news articles about heat pump subsidies. Return JSON only.' },
+            { role: 'user', content: `Real news articles about heat pumps in ${country.name}:\n\n${articleList}\n\nFor each RELEVANT article (subsidies, energy policy, heating regulations), create a summary.\n\nReturn: {"items": [{"title": "headline max 80 chars", "description": "2-3 sentences", "impact": "critical|medium|info", "original_index": number}]}\n\nSkip unrelated. If none relevant: {"items": []}` }
           ],
-          model: 'llama-3.3-70b-versatile', temperature: 0.2, max_tokens: 1500,
+          model: 'llama-3.3-70b-versatile', temperature: 0.2, max_tokens: 800,
           response_format: { type: 'json_object' }
         });
 
         const content = completion.choices[0]?.message?.content;
         if (!content) continue;
 
-        let newsItems, extractions;
-        try {
-          const parsed = JSON.parse(content);
-          newsItems = parsed.items || [];
-          extractions = parsed.extractions || [];
-        } catch (e) { continue; }
+        let newsItems;
+        try { newsItems = JSON.parse(content).items || []; } catch (e) { continue; }
 
         for (const item of newsItems) {
           if (!item.title) continue;
@@ -314,50 +335,6 @@ module.exports = async function handler(req, res) {
           });
           results.news++;
         }
-
-        // === Phase E2: Process structured extractions → pending_data_review ===
-        const validFields = new Set(['max_subsidy', 'subsidy_program', 'market_size']);
-        for (const ex of extractions) {
-          if (!ex || !ex.data_type || !ex.field_name || ex.new_value == null) continue;
-          if (!validFields.has(ex.field_name)) continue;
-          // Get current DB value
-          const currentVal = country[ex.field_name];
-          const currentStr = currentVal != null ? String(currentVal) : null;
-          const newStr = String(ex.new_value);
-          // Skip if no actual change
-          if (currentStr === newStr) continue;
-          // Skip if value is suspicious (too low/high for the field)
-          if (ex.field_name === 'max_subsidy' && (Number(newStr) < 100 || Number(newStr) > 500000)) continue;
-          if (ex.field_name === 'market_size' && (Number(newStr) < 0.1 || Number(newStr) > 10000)) continue;
-
-          const origArt = articles[ex.original_index - 1] || articles[0];
-          try {
-            await fetch(`${SUPABASE_URL}/rest/v1/pending_data_review?on_conflict=country_code,data_type,field_name,source_article_url`, {
-              method: 'POST',
-              headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'resolution=merge-duplicates,return=minimal'
-              },
-              body: JSON.stringify({
-                country_code: country.id,
-                data_type: ex.data_type,
-                field_name: ex.field_name,
-                current_value: currentStr,
-                suggested_value: newStr,
-                reasoning: ex.reasoning || '',
-                source_article_title: origArt.title || '',
-                source_article_url: origArt.url || '',
-                confidence: typeof ex.confidence === 'number' ? Math.max(0, Math.min(1, ex.confidence)) : 0.5,
-                status: 'pending'
-              })
-            });
-            results.extractions = (results.extractions || 0) + 1;
-          } catch (e) {
-            results.errors.push(`Extraction ${country.id}: ${e.message}`);
-          }
-        }
       } catch (e) { results.errors.push(`News ${country.name}: ${e.message}`); }
     }
 
@@ -369,28 +346,31 @@ module.exports = async function handler(req, res) {
       // Track all rows we wrote, so we can sync the countries table afterwards
       const allFreshRows = [];
 
-      // --- 1. Eurostat electricity (NRG_PC_204) + gas (NRG_PC_202) for 14 EU + Norway ---
+      // --- 1. Eurostat electricity (NRG_PC_204) + gas (NRG_PC_202) for 29 countries ---
+      // (25 EU + Norway + Bosnia + Serbia + Turkey)
       try {
-        const geoQuery = Object.keys(EU_COUNTRIES).map(c => `geo=${c}`).join('&');
+        const eurostatCodes = Object.keys(EUROSTAT_COUNTRIES);
+        const geoQuery = eurostatCodes.map(c => `geo=${c}`).join('&');
         const elec = await fetchEurostat('nrg_pc_204',
           `siec=E7000&nrg_cons=KWH2500-4999&unit=KWH&tax=I_TAX&currency=EUR&${geoQuery}`);
         const gas = await fetchEurostat('nrg_pc_202',
           `siec=G3000&nrg_cons=GJ20-199&unit=KWH&tax=I_TAX&currency=EUR&${geoQuery}`);
 
         const euRows = [];
-        for (const code of Object.keys(EU_COUNTRIES)) {
-          const elecData = elec.data[code] || {};
-          const gasData = gas.data[code] || {};
+        for (const eurostatCode of eurostatCodes) {
+          const meta = EUROSTAT_COUNTRIES[eurostatCode];
+          const elecData = elec.data[eurostatCode] || {};
+          const gasData = gas.data[eurostatCode] || {};
           const allPeriods = new Set([...Object.keys(elecData), ...Object.keys(gasData)]);
 
           for (const periodCode of allPeriods) {
             const m = periodCode.match(/^(\d{4})-S(\d)$/);
             if (!m) continue;
             const year = parseInt(m[1]);
-            if (year < MIN_YEAR) continue; // skip ancient history
+            if (year < MIN_YEAR) continue;
             euRows.push({
-              country_code: code,
-              country_name: EU_COUNTRIES[code],
+              country_code: meta.db_id,           // use our DB code (e.g., GR not EL)
+              country_name: meta.name,
               year,
               period: `H${m[2]}`,
               electricity_eur_kwh: elecData[periodCode] ?? null,
