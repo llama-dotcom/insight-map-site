@@ -553,7 +553,7 @@ async function loadFromDB(){
   try{
     const [dbCountries,dbNews,dbSubsidies]=await Promise.all([
       sbGet('countries','order=sort_weight.desc'),
-      sbGet('news','order=created_at.desc&limit=100'),
+      sbGet('news','order=created_at.desc&limit=250'),
       sbGet('subsidies','order=country_id')
     ]);
     if(dbCountries&&dbCountries.length>0){
