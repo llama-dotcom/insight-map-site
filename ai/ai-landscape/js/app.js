@@ -147,10 +147,32 @@ const App = {
     el.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   },
 
-  // --- Refresh button ---
+  // --- Refresh button: triggers real cron update + reload ---
   initRefresh() {
     const btn = document.querySelector('.btn-refresh');
-    if (btn) btn.addEventListener('click', () => location.reload());
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = btn.innerHTML.replace('Refresh', 'Updating...');
+      btn.style.opacity = '0.7';
+      try {
+        const r = await fetch('/api/ai-landscape-update');
+        const data = await r.json();
+        if (data.ok) {
+          btn.innerHTML = btn.innerHTML.replace('Updating...', `Done! +${data.news} news`);
+          setTimeout(() => location.reload(), 1200);
+        } else {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          btn.style.opacity = '';
+        }
+      } catch (e) {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.style.opacity = '';
+      }
+    });
   },
 
   // --- Mobile Nav ---
