@@ -315,10 +315,9 @@ function aggregateAnnual(rows){
 // =============================================================
 async function loadFromDB(){
   try {
-    const [pricesRows, countriesRows, newsRows] = await Promise.all([
+    const [pricesRows, countriesRows] = await Promise.all([
       sbGet('energy_prices', 'order=year.asc'),
-      sbGet('countries', 'select=id,name,outlook,sort_weight,market_size'),
-      sbGet('news', 'order=created_at.desc&limit=200')
+      sbGet('countries', 'select=id,name,outlook,sort_weight,market_size')
     ]);
 
     // Lookup tables
@@ -329,23 +328,9 @@ async function loadFromDB(){
       sortByCode[c.id] = c.sort_weight || c.market_size || 0;
     }
 
-    // Filter news to ONLY energy-price-related topics (max 1 per country)
-    // This page is about prices, not subsidies — only show price-relevant news
-    const PRICE_KEYWORDS = /electricit|energy price|energy cost|tariff|grid|strompreis|energiepreis|netzentgelt|prix.*[eé]nergi|precio.*energ|ofgem|price cap|wholesale|kWh|gas price|fuel cost|network charge|EEG|grid fee/i;
+    // No news on this page — it's a pure data page (prices, charts, tables).
+    // News and policy signals are on the main dashboard.
     const newsByCode = {};
-    for (const n of newsRows) {
-      const code = n.country_id;
-      if (newsByCode[code]) continue; // max 1 per country
-      const text = (n.title || '') + ' ' + (n.description || '');
-      if (PRICE_KEYWORDS.test(text)) {
-        newsByCode[code] = [{
-          d: n.date || '',
-          t: n.title || '',
-          ds: n.description || '',
-          u: n.source_url || ''
-        }];
-      }
-    }
 
     // Aggregate energy_prices into per-country annual format
     const aggregated = aggregateAnnual(pricesRows);
