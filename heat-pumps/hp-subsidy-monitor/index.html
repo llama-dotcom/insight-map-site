@@ -412,8 +412,10 @@ function renderT(){
     const stC=c.st==='active'?'st-a':c.st==='expiring'?'st-e':'st-n';
     const ty=c.sp.includes('Tax')||c.sp.includes('IRPF')?'Tax Credit':c.sp.includes('IQ')?'Loan':'Grant';
     const tech=c.det.toLowerCase().includes('hybrid')?'<span class="t-hy">HP+Hybrid</span>':'<span class="t-hp">HP</span>';
-    const sn=c.sl?c.sl.replace(/https?:\/\/(www\.)?/,'').split('/')[0].split('.').slice(-2,-1)[0]:'—';
-    const lk=c.sl?`<a href="${c.sl}" target="_blank" style="font-size:0.68rem;text-decoration:none;color:var(--dim);">${sn} →</a>`:'—';
+    // Prefer Gemini-verified subsidyUrl (Phase F), fall back to legacy sl
+    const srcUrl = c.subsidyUrl || c.sl || '';
+    const sn = srcUrl ? srcUrl.replace(/https?:\/\/(www\.)?/,'').split('/')[0].split('.').slice(-2,-1)[0] : '—';
+    const lk = srcUrl ? `<a href="${srcUrl}" target="_blank" rel="noopener" title="${(c.subsidyBreakdown||'Verified source').replace(/"/g,'&quot;')}" style="font-size:0.68rem;text-decoration:none;color:var(--dim);">${sn} →</a>` : '—';
     const bar=c.ms>0?`<div style="width:${Math.min(c.ms/24000*100,100)}%;height:3px;background:var(--green);border-radius:2px;margin-top:2px;"></div>`:'';
     return`<tr onclick="openM('${c.n}')" style="cursor:pointer;">
       <td style="font-weight:500;">${c.f} ${c.n}</td>
@@ -476,12 +478,18 @@ function openM(nm){
   if(c.sl)h+=`<a href="${c.sl}" target="_blank" style="font-size:0.78rem;color:var(--accent);">Official subsidy page →</a>`;
   h+=`</div>`;
   h+=`<div class="m-s"><h3><i data-lucide="bolt" style="width:14px;height:14px;"></i> Energy & Market</h3>`;
-  h+=`<div class="m-rw"><span style="color:var(--muted)">Max Subsidy</span><span style="color:var(--green);font-weight:600;">€${c.ms.toLocaleString()}</span></div>`;
+  // Max Subsidy: optional ↗ link to verified source URL, optional tooltip with breakdown
+  const subUrl = c.subsidyUrl || c.sl || '';
+  const subLink = subUrl ? ` <a href="${subUrl}" target="_blank" rel="noopener" title="${(c.subsidyBreakdown||'Verified source').replace(/"/g,'&quot;')}" style="color:var(--accent);text-decoration:none;font-size:0.78rem;">↗</a>` : '';
+  h+=`<div class="m-rw"><span style="color:var(--muted)">Max Subsidy</span><span style="color:var(--green);font-weight:600;">€${c.ms.toLocaleString()}${subLink}</span></div>`;
   h+=`<div class="m-rw"><span style="color:var(--muted)">Electricity</span><span>€${c.e.toFixed(3)}/kWh</span></div>`;
   h+=`<div class="m-rw"><span style="color:var(--muted)">Gas</span><span>${gs}</span></div>`;
   h+=`<div class="m-rw"><span style="color:var(--muted)">Ratio</span><span style="color:${c.r&&c.r>3.5?'var(--red)':c.r&&c.r>2.5?'var(--yellow)':'var(--green)'}">${rs}</span></div>`;
-  h+=`<div class="m-rw"><span style="color:var(--muted)">Market${c.yr?' ('+c.yr+')':''}</span><span>${c.s>0?c.s+'k units':'N/A'}${c.a2a&&c.s>0?' <span class="a2a-tag">incl.A2A</span>':''}</span></div>`;
-  if(c.pen!=='N/A')h+=`<div class="m-rw"><span style="color:var(--muted)">HP penetration</span><span>${c.pen} of households</span></div><div style="font-size:0.68rem;color:var(--dim);padding:2px 0;">Calc: estimated installed base ÷ total households × 100%. Source: EHPA/national data.</div>`;
+  // Market: ↗ link to verified source, method note (incl. A2A or similar) on second line
+  const mktLink = c.marketUrl ? ` <a href="${c.marketUrl}" target="_blank" rel="noopener" title="${(c.marketNote||'Verified source').replace(/"/g,'&quot;')}" style="color:var(--accent);text-decoration:none;font-size:0.78rem;">↗</a>` : '';
+  const a2aLegacy = c.a2a && c.s>0 && !c.marketNote ? ' <span class="a2a-tag">incl.A2A</span>' : '';
+  h+=`<div class="m-rw"><span style="color:var(--muted)">Market${c.yr?' ('+c.yr+')':''}</span><span>${c.s>0?c.s+'k units':'N/A'}${a2aLegacy}${mktLink}</span></div>`;
+  if(c.marketNote)h+=`<div style="font-size:0.66rem;color:var(--dim);padding:0 0 4px 0;font-style:italic;">${c.marketNote}</div>`;
   h+=`<div class="m-rw"><span style="color:var(--muted)">Data source</span><span style="font-size:0.78rem;">${c.src}</span></div></div>`;
   if(cn.length){
     h+=`<div class="m-s"><h3><i data-lucide="radio-tower" style="width:14px;height:14px;"></i> Policy Changes</h3>`;
@@ -507,14 +515,15 @@ function runCompare(){
   if(sel.length<2){document.getElementById('cmp-result').innerHTML='<div style="color:var(--dim);font-size:0.85rem;padding:8px;">Select at least 2 countries.</div>';return;}
   const cs=sel.map(n=>gc(n)).filter(Boolean);
   const maxMs=Math.max(...cs.map(c=>c.ms));
+  // Helper for tiny ↗ source link
+  const lnk = (url, title) => url ? ` <a href="${url}" target="_blank" rel="noopener" title="${(title||'Verified source').replace(/"/g,'&quot;')}" style="color:var(--accent);text-decoration:none;font-size:0.7rem;">↗</a>` : '';
   let h='<table class="cmp-tbl"><thead><tr><th>Metric</th>'+cs.map(c=>'<th>'+c.f+' '+c.n+'</th>').join('')+'</tr></thead><tbody>';
-  h+='<tr><td>Max Subsidy</td>'+cs.map(c=>'<td class="'+(c.ms===maxMs&&maxMs>0?'cmp-best':'')+'">€'+c.ms.toLocaleString()+'</td>').join('')+'</tr>';
+  h+='<tr><td>Max Subsidy</td>'+cs.map(c=>'<td class="'+(c.ms===maxMs&&maxMs>0?'cmp-best':'')+'">€'+c.ms.toLocaleString()+lnk(c.subsidyUrl||c.sl,c.subsidyBreakdown)+'</td>').join('')+'</tr>';
   h+='<tr><td>Program</td>'+cs.map(c=>'<td>'+c.sp+'</td>').join('')+'</tr>';
   h+='<tr><td>Electricity</td>'+cs.map(c=>'<td style="font-family:Menlo,Consolas,monospace;">€'+c.e.toFixed(3)+'</td>').join('')+'</tr>';
   h+='<tr><td>Gas</td>'+cs.map(c=>'<td style="font-family:Menlo,Consolas,monospace;">'+(c.ga?'€'+c.ga.toFixed(3):'N/A')+'</td>').join('')+'</tr>';
   h+='<tr><td>Elec/Gas Ratio</td>'+cs.map(c=>{const rc=c.r&&c.r>3.5?'color:var(--red)':c.r&&c.r>2.5?'color:var(--yellow)':'color:var(--green)';return'<td style="font-family:Menlo,Consolas,monospace;'+rc+'">'+(c.r?c.r.toFixed(2)+'x':'N/A')+'</td>';}).join('')+'</tr>';
-  h+='<tr><td>Market</td>'+cs.map(c=>'<td>'+(c.s>0?c.s+'k ('+c.yr+')':'N/A')+'</td>').join('')+'</tr>';
-  h+='<tr><td>HP Penetration</td>'+cs.map(c=>'<td>'+(c.pen||'N/A')+'</td>').join('')+'</tr>';
+  h+='<tr><td>Market</td>'+cs.map(c=>'<td>'+(c.s>0?c.s+'k ('+c.yr+')':'N/A')+lnk(c.marketUrl,c.marketNote)+'</td>').join('')+'</tr>';
   h+='</tbody></table>';
   document.getElementById('cmp-result').innerHTML=h;
 }
@@ -561,7 +570,12 @@ async function loadFromDB(){
           a2a:c.includes_a2a||false,src:c.data_source||'',
           sortWeight:c.sort_weight||c.market_size||0,
           nsub:countrySubs.length||1,
-          subs:subsStr||undefined
+          subs:subsStr||undefined,
+          // Phase F: per-field source URLs and method notes
+          subsidyUrl:c.subsidy_source_url||'',
+          subsidyBreakdown:c.subsidy_breakdown||'',
+          marketUrl:c.market_source_url||'',
+          marketNote:c.market_method_note||''
         });
       });
       // Map DB news to NEWS format — max 5 newest per country
