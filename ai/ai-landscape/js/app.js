@@ -236,9 +236,6 @@ const App = {
     switch (page) {
       case 'index':
       case '':
-        await this.loadDashboard();
-        break;
-      case 'systems':
         await this.loadSystems();
         break;
       case 'synergies':
@@ -510,9 +507,12 @@ const App = {
           ${sys.estimated_users ? `<span class="badge badge--users">${this.esc(sys.estimated_users)}</span>` : ''}
           ${sys.latest_model ? `<span class="badge">${this.esc(sys.latest_model)}</span>` : ''}
         </div>
-        <button class="card__expand-btn" onclick="App.toggleCard(this)">
-          Show details →
-        </button>
+        <div class="card__actions">
+          ${sys.url ? `<a class="card__link" href="${this.esc(sys.url)}" target="_blank" rel="noopener noreferrer">${this.esc(this.shortUrl(sys.url))} ↗</a>` : ''}
+          <button class="card__expand-btn" onclick="App.toggleCard(this)">
+            Details →
+          </button>
+        </div>
         <div class="card__details">
           <div class="detail-section">
             <div class="pros-cons">
@@ -522,9 +522,6 @@ const App = {
           </div>
           ${useCasesHtml ? `<div class="detail-section"><h4>Use Cases</h4><div class="use-cases">${useCasesHtml}</div></div>` : ''}
           ${idesHtml}
-          <div class="detail-section">
-            <a href="${this.esc(sys.url)}" target="_blank" rel="noopener noreferrer">Visit ${this.esc(sys.name)} →</a>
-          </div>
         </div>
       </div>
     `;
@@ -692,6 +689,11 @@ const App = {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  },
+
+  shortUrl(url) {
+    if (!url) return '';
+    return url.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '').split('/')[0];
   },
 
   formatDate(dateStr) {
