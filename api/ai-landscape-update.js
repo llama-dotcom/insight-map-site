@@ -101,30 +101,27 @@ module.exports = async function handler(req, res) {
       const seen = new Set();
       const deduped = fetched.filter(n => { const k = n.title.slice(0, 60).toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 25);
 
-      // Generate real summaries via Groq (batch all titles in one call)
+      // Generate real summaries via Groq (batches of 5 to fit context window)
       if (deduped.length > 0) {
-        try {
-          const titles = deduped.map((n, i) => `${i}. ${n.title}`).join('\n');
-          const sumResp = await askGroq(`You are an AI news editor. For each headline below, write a 5-sentence summary that explains:
-1. What exactly happened
-2. Who is involved (company, people)
-3. Why it matters for the AI industry
-4. What the impact could be
-5. Any relevant context or background
-
-Be specific, informative, and use concrete details. Each summary should be a proper paragraph, not bullet points.
+        const batchSize = 5;
+        for (let b = 0; b < deduped.length; b += batchSize) {
+          const batch = deduped.slice(b, b + batchSize);
+          try {
+            const titles = batch.map((n, i) => `${i}. ${n.title}`).join('\n');
+            const sumResp = await askGroq(`You are an AI news editor. For each headline below, write a 5-sentence summary paragraph that explains what happened, who is involved, why it matters for the AI industry, what the impact could be, and relevant context. Be specific and informative.
 
 Headlines:
 ${titles}
 
-Reply with JSON: {"summaries": ["5-sentence summary for item 0", "5-sentence summary for item 1", ...]}
-Return exactly ${deduped.length} summaries in the same order.`, 6000, 'fast');
+Reply with JSON: {"summaries": ["paragraph for item 0", "paragraph for item 1", ...]}
+Return exactly ${batch.length} summaries.`, 3000, 'fast');
 
-          const sums = sumResp.summaries || [];
-          for (let i = 0; i < Math.min(sums.length, deduped.length); i++) {
-            if (sums[i] && sums[i].length > 20) deduped[i].summary = sums[i];
-          }
-        } catch (e) { results.errors.push(`news summaries: ${e.message}`); }
+            const sums = sumResp.summaries || [];
+            for (let i = 0; i < Math.min(sums.length, batch.length); i++) {
+              if (sums[i] && sums[i].length > 30) deduped[b + i].summary = sums[i];
+            }
+          } catch (e) { results.errors.push(`news summaries batch ${b}: ${e.message}`); }
+        }
 
         await upsert('ai_news', deduped);
         results.news = deduped.length;
