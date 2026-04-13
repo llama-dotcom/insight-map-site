@@ -451,13 +451,13 @@ function renderCG(f){
   const s=[...fl].sort((a,b)=>(b.sortWeight||b.s)-(a.sortWeight||a.s));
   document.getElementById('c-grid').innerHTML=s.map(c=>{
     const mkt=c.s>0?`${c.s}k units (${c.yr})`:'N/A';
-    const nsubs=c.nsub||1;
+    const maxSub=c.ms>0?`max €${c.ms.toLocaleString()}`:'no subsidy';
     return`<div class="gc c-card" onclick="openM('${c.n}')">
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="font-size:1.4rem;">${c.f}</span>
         <div style="flex:1;">
           <div style="font-weight:600;color:var(--text);font-size:0.9rem;">${c.n}</div>
-          <div style="font-size:0.72rem;color:var(--muted);">${mkt} · ${nsubs} subsid${nsubs>1?'ies':'y'}</div>
+          <div style="font-size:0.72rem;color:var(--muted);">${mkt} · ${maxSub}</div>
         </div>
       </div>
     </div>`;
