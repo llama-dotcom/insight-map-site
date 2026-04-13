@@ -77,8 +77,18 @@ header{background:var(--bg);border-bottom:1px solid var(--glass-b);padding:12px 
 .hdr-theme:hover{opacity:0.9;transform:translateY(-1px);}
 .hdr-date{font-size:0.65rem;color:var(--dim);}
 @media(max-width:900px){
-  .hdr-container{flex-direction:column;align-items:flex-start;}
-  .hdr-tabs{width:100%;justify-content:center;}
+  .hdr-container{flex-direction:column;align-items:flex-start;padding:0 12px;}
+  .hdr-tabs{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;justify-content:flex-start;scrollbar-width:none;}
+  .hdr-tabs::-webkit-scrollbar{display:none;}
+  .hdr-tab{white-space:nowrap;padding:6px 12px;font-size:0.72rem;}
+  .hdr-right{width:100%;justify-content:space-between;flex-wrap:wrap;gap:6px;}
+  .hdr-scope{display:none;}
+  .hdr-title{font-size:0.92rem;}
+}
+@media(max-width:480px){
+  .hdr-tab{padding:5px 10px;font-size:0.68rem;}
+  .hdr-refresh,.hdr-theme{padding:4px 8px;font-size:0.68rem;}
+  .hdr-date{font-size:0.6rem;}
 }
 `;
 document.head.appendChild(sharedCSS);
