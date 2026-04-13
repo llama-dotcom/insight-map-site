@@ -6,11 +6,11 @@
     },
     {
       "path": "/api/refresh-data?batch=1",
-      "schedule": "0 4 1 * *"
+      "schedule": "0 4 1,15 * *"
     },
     {
       "path": "/api/refresh-data?batch=2",
-      "schedule": "0 4 2 * *"
+      "schedule": "0 4 2,16 * *"
     }
   ],
   "headers": [
