@@ -81,9 +81,10 @@ footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid v
       <tr><td><strong>Electricity prices</strong></td><td><span class="tag t-m">Monthly</span></td><td>Eurostat NRG_PC_204 (29 EU/EFTA countries), gov.uk DESNZ (UK), ElCom (Switzerland). Residential band 2500–5000 kWh/year, all taxes included, in EUR.</td></tr>
       <tr><td><strong>Gas prices</strong></td><td><span class="tag t-m">Monthly</span></td><td>Eurostat NRG_PC_202, gov.uk DESNZ. N/A where no residential gas market.</td></tr>
       <tr><td><strong>Elec/Gas ratio</strong></td><td><span class="tag t-m">Monthly</span></td><td>Computed automatically from electricity ÷ gas price.</td></tr>
-      <tr><td><strong>Subsidy programs</strong></td><td><span class="tag t-m">Monthly</span></td><td>Official government portals (KfW, MaPrimeRénov, ISDE, BUS, Conto Termico, Czyste Powietrze, etc.) via AI-powered web search and verification.</td></tr>
-      <tr><td><strong>Market size</strong></td><td><span class="tag t-m">Monthly</span></td><td>National HP associations (BWP, Uniclima, SULPU, VWP, HPA, PORT PC, WPA, VPI, FWS), EHPA, IEA. Year-forward rule: only updates when newer annual data becomes available.</td></tr>
-      <tr><td><strong>News & signals</strong></td><td><span class="tag t-d">Daily</span></td><td>Google News RSS in 25 languages. AI-summarized with deduplication (same story from different outlets → one combined summary). Max 5 articles per country.</td></tr>
+      <tr><td><strong>Subsidies</strong> (program, max amount, status, breakdown)</td><td><span class="tag t-m">Biweekly</span></td><td>Official government portals via AI-powered web search. Every value includes a source link for verification. Program status (active/expiring/discontinued) updated automatically.</td></tr>
+      <tr><td><strong>Market size</strong></td><td><span class="tag t-m">Biweekly</span></td><td>National HP associations (BWP, Uniclima, SULPU, etc.), EHPA, IEA. Year-forward rule: only updates when newer annual data becomes available. Scope labeled (hydronic-only or incl. A2A).</td></tr>
+      <tr><td><strong>Policy outlook</strong></td><td><span class="tag t-m">Biweekly</span></td><td>AI-generated summary of near-term policy direction per country, based on latest official sources. Updated alongside subsidy data.</td></tr>
+      <tr><td><strong>News & signals</strong></td><td><span class="tag t-d">Daily</span></td><td>Google News RSS in 25 languages. AI-summarized with deduplication (same story from different outlets → one combined summary). Max 6 articles per country.</td></tr>
     </tbody>
   </table>
 </div>
