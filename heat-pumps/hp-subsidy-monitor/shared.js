@@ -9,6 +9,7 @@ function initHeader(activePage){
     {id:'dashboard',label:'Dashboard',icon:'layout-dashboard',href:'index.html',tabAction:"showP('dash',this)"},
     {id:'countries',label:'Countries',icon:'globe',href:'index.html',tabAction:"showP('countries',this)"},
     {id:'prices',label:'Electricity Prices',icon:'bolt',href:'energy-prices.html'},
+    {id:'manufacturers',label:'Manufacturers',icon:'factory',href:'manufacturers.html'},
     {id:'about',label:'About',icon:'info',href:'about.html'}
   ];
   const isIndex=activePage==='dashboard'||activePage==='countries';
