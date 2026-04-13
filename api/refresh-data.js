@@ -179,6 +179,14 @@ Return:
   • Direct URL to source (REQUIRED)
 
 ═══════════════════════════════════════════════════════
+TASK 3 — STATUS & OUTLOOK
+═══════════════════════════════════════════════════════
+Based on your research:
+
+• status: Is the subsidy program currently "active" (accepting applications), "expiring" (end date announced or approaching), or "discontinued" (cancelled, suspended, no longer available)?
+• outlook: Write 1-2 sentences about the near-term policy direction for heat pumps in this country. Focus on concrete facts (budget changes, program extensions, regulatory shifts), not speculation.
+
+═══════════════════════════════════════════════════════
 CURRENT DATABASE VALUES (for context only — return latest you can verify):
 ═══════════════════════════════════════════════════════
   subsidy_program: "${country.subsidy_program || 'unknown'}"
@@ -195,6 +203,7 @@ RETURN FORMAT — ONLY this JSON, no markdown, no other text:
     "breakdown": "<plain text describing components, e.g., '30% base + 20% speed + 5% efficiency = 55% capped at 70% × €30k = €21k + €2.5k Emissions surcharge = €23.5k'>",
     "source_url": "<official URL — REQUIRED>",
     "effective_year": <YYYY>,
+    "status": "active" | "expiring" | "discontinued",
     "confidence": <0.0-1.0>
   },
   "market": {
@@ -205,6 +214,7 @@ RETURN FORMAT — ONLY this JSON, no markdown, no other text:
     "includes_a2a": <true|false>,
     "confidence": <0.0-1.0>
   },
+  "outlook": "<1-2 sentences: near-term policy direction for heat pumps in this country. Concrete facts only, no speculation.>",
   "reasoning": "<2-3 sentences max — what you found and any uncertainties>"
 }
 
@@ -291,22 +301,36 @@ function computePatches(country, gemini) {
       const existingYearMatch = (country.subsidy_breakdown || '').match(/\b(20\d{2})\b/);
       const existingYearNum = existingYearMatch ? parseInt(existingYearMatch[1]) : 0;
 
+      // Status from Gemini (active/expiring/discontinued) — always update if present
+      const newStatus = (subsidy.status || '').toLowerCase().trim();
+      const validStatuses = ['active', 'expiring', 'discontinued'];
+
       if (isFirstWrite) {
         patches.subsidy_program = newProgram;
         patches.max_subsidy = newAmt;
         patches.subsidy_breakdown = newBreakdown;
         patches.subsidy_source_url = url;
-        decisions.push(`subsidy: FIRST WRITE — €${newAmt} (${newProgram}, tier ${tier}) from ${url}`);
+        patches.detail = newBreakdown; // also update legacy detail field
+        if (validStatuses.includes(newStatus)) patches.status = newStatus;
+        decisions.push(`subsidy: FIRST WRITE — €${newAmt} (${newProgram}, ${newStatus}, tier ${tier}) from ${url}`);
       } else if (newYear > 0 && existingYearNum > 0 && newYear < existingYearNum) {
         decisions.push(`subsidy: SKIP — found ${newYear} data, DB has ${existingYearNum}`);
       } else if (newAmt === curAmt && newProgram === country.subsidy_program) {
-        decisions.push(`subsidy: unchanged €${curAmt}`);
+        // Amount unchanged, but still update status/breakdown if available
+        if (validStatuses.includes(newStatus) && newStatus !== country.status) {
+          patches.status = newStatus;
+          decisions.push(`subsidy: amount unchanged €${curAmt}, but STATUS updated → ${newStatus}`);
+        } else {
+          decisions.push(`subsidy: unchanged €${curAmt}`);
+        }
       } else {
         patches.max_subsidy = newAmt;
         patches.subsidy_program = newProgram;
         patches.subsidy_breakdown = newBreakdown;
         patches.subsidy_source_url = url;
-        decisions.push(`subsidy: UPDATE €${curAmt}→€${newAmt} (${newProgram}, tier ${tier}) from ${url}`);
+        patches.detail = newBreakdown;
+        if (validStatuses.includes(newStatus)) patches.status = newStatus;
+        decisions.push(`subsidy: UPDATE €${curAmt}→€${newAmt} (${newProgram}, ${newStatus}, tier ${tier}) from ${url}`);
       }
     }
   } else {
@@ -349,6 +373,13 @@ function computePatches(country, gemini) {
     }
   } else {
     decisions.push(`market: no data returned`);
+  }
+
+  // ===== OUTLOOK (always update if Gemini returned one) =====
+  const newOutlook = (gemini.parsed?.outlook || '').trim();
+  if (newOutlook && newOutlook.length > 10 && newOutlook.length < 500) {
+    patches.outlook = newOutlook;
+    decisions.push(`outlook: UPDATE → "${newOutlook.slice(0, 80)}..."`);
   }
 
   return { patches, decisions };
