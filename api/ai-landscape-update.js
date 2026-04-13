@@ -38,9 +38,12 @@ module.exports = async function handler(req, res) {
     const isFullRefresh = true;
 
     // Helper: ask Groq, parse JSON
-    async function askGroq(prompt, maxTokens = 4000) {
+    // model: 'big' (70b, complex tasks) or 'fast' (8b, high-volume simple tasks)
+    async function askGroq(prompt, maxTokens = 4000, size = 'big') {
+      const modelMap = { big: 'llama-3.3-70b-versatile', fast: 'llama-3.1-8b-instant' };
+      const model = modelMap[size] || modelMap.big;
       const c = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.2,
         max_tokens: maxTokens,
@@ -102,13 +105,20 @@ module.exports = async function handler(req, res) {
       if (deduped.length > 0) {
         try {
           const titles = deduped.map((n, i) => `${i}. ${n.title}`).join('\n');
-          const sumResp = await askGroq(`You are an AI news editor. For each headline below, write a 2-sentence summary explaining what happened and why it matters. Be specific and informative.
+          const sumResp = await askGroq(`You are an AI news editor. For each headline below, write a 5-sentence summary that explains:
+1. What exactly happened
+2. Who is involved (company, people)
+3. Why it matters for the AI industry
+4. What the impact could be
+5. Any relevant context or background
+
+Be specific, informative, and use concrete details. Each summary should be a proper paragraph, not bullet points.
 
 Headlines:
 ${titles}
 
-Reply with JSON: {"summaries": ["summary for item 0", "summary for item 1", ...]}
-Return exactly ${deduped.length} summaries in the same order.`, 4000);
+Reply with JSON: {"summaries": ["5-sentence summary for item 0", "5-sentence summary for item 1", ...]}
+Return exactly ${deduped.length} summaries in the same order.`, 6000, 'fast');
 
           const sums = sumResp.summaries || [];
           for (let i = 0; i < Math.min(sums.length, deduped.length); i++) {
