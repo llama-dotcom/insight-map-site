@@ -1,25 +1,22 @@
 // ============================================
-// AI Landscape — Daily Cron Handler
-// Runs daily at 07:00 UTC (09:00 Berlin CEST / 08:00 CET)
+// AI Landscape — Daily Cron Handler (Full Automation)
+// Schedule: 0 7 * * * (07:00 UTC = 09:00 Berlin CEST)
 //
-// What it does:
-// 1. Fetches latest AI news via Google News RSS (last 7 days)
-// 2. Asks Groq LLM to refresh AI systems data with current-date awareness
-// 3. Cleans up past events (older than 1 month)
-// 4. Writes everything to Supabase
-// 5. Updates ai_meta timestamps
+// DAILY: news via Google RSS + light model-release check via Groq
+// WEEKLY (Monday): full system refresh + new events discovery via Groq
+// ALWAYS: clean past events (>30d) and old news (>60d)
 // ============================================
 
 const Groq = require('groq-sdk');
 
 module.exports = async function handler(req, res) {
   const startTime = Date.now();
-  const results = { systems: 0, news: 0, events_cleaned: 0, errors: [] };
+  const results = { news: 0, systems_updated: 0, systems_added: 0, events_added: 0, events_cleaned: 0, errors: [] };
 
   try {
-    // Auth check — only Vercel Cron or requests with secret
-    const cronSecret = process.env.CRON_SECRET_AI_LANDSCAPE;
+    // Auth
     const isVercelCron = req.headers['x-vercel-cron'] === '1';
+    const cronSecret = process.env.CRON_SECRET_AI_LANDSCAPE;
     const authHeader = req.headers.authorization;
     if (!isVercelCron && cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -28,204 +25,249 @@ module.exports = async function handler(req, res) {
     const SUPABASE_URL = process.env.SUPABASE_URL_AI_LANDSCAPE;
     const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY_AI_LANDSCAPE;
     const GROQ_KEY = process.env.GROQ_API_KEY_AI_LANDSCAPE;
-
     if (!SUPABASE_URL || !SUPABASE_KEY || !GROQ_KEY) {
       return res.status(500).json({ error: 'Missing env vars' });
     }
 
-    const sbHeaders = {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=minimal',
-    };
-
+    const sbH = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
     const groq = new Groq({ apiKey: GROQ_KEY });
     const today = new Date();
     const todayISO = today.toISOString().slice(0, 10);
+    const isMonday = today.getUTCDay() === 1;
+
+    // Helper: ask Groq, parse JSON
+    async function askGroq(prompt, maxTokens = 4000) {
+      const c = await groq.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.2,
+        max_tokens: maxTokens,
+        response_format: { type: 'json_object' },
+      });
+      return JSON.parse(c.choices[0].message.content);
+    }
+
+    // Helper: Supabase upsert
+    async function upsert(table, rows) {
+      if (!rows || rows.length === 0) return;
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=id`, {
+        method: 'POST',
+        headers: { ...sbH, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify(rows),
+      });
+      if (!r.ok) throw new Error(`upsert ${table}: HTTP ${r.status} ${await r.text()}`);
+    }
 
     // ============================================
-    // 1. NEWS — Google News RSS
+    // 1. NEWS — Google News RSS (daily)
     // ============================================
     try {
-      const newsQueries = [
-        { q: 'GPT OpenAI ChatGPT release 2026', cat: 'release' },
-        { q: 'Claude Anthropic release 2026', cat: 'release' },
-        { q: 'Gemini Google DeepMind release 2026', cat: 'release' },
-        { q: 'Llama Meta open source AI 2026', cat: 'release' },
-        { q: 'AI funding round billion 2026', cat: 'funding' },
-        { q: 'EU AI Act regulation 2026', cat: 'regulation' },
-        { q: 'AI coding tool Cursor Copilot 2026', cat: 'release' },
-        { q: 'DeepSeek Qwen Chinese AI 2026', cat: 'release' },
+      const queries = [
+        'GPT OpenAI ChatGPT AI release 2026',
+        'Claude Anthropic AI release 2026',
+        'Gemini Google DeepMind AI 2026',
+        'Llama Meta Mistral open source AI 2026',
+        'AI funding round billion valuation 2026',
+        'EU AI Act regulation enforcement 2026',
+        'AI coding tool Cursor Copilot Claude Code 2026',
+        'DeepSeek Qwen Chinese AI model 2026',
+        'AI conference summit expo 2026',
+        'AI startup acquisition merger 2026',
       ];
-
-      const fetchedNews = [];
-      for (const q of newsQueries) {
+      const fetched = [];
+      for (const q of queries) {
         try {
-          const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q.q)}&hl=en&gl=US&ceid=US:en`;
-          const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AILandscapeBot/1.0)' } });
+          const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en&gl=US&ceid=US:en`;
+          const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
           if (!r.ok) continue;
           const xml = await r.text();
           const items = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
           for (const item of items.slice(0, 3)) {
-            const title = (item.match(/<title>(.*?)<\/title>/) || [])[1] || '';
+            const title = ((item.match(/<title>(.*?)<\/title>/) || [])[1] || '').replace(/<!\[CDATA\[(.*?)\]\]>/, '$1').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
             const link = (item.match(/<link>(.*?)<\/link>/) || [])[1] || '';
             const pubDate = (item.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || '';
             const source = (item.match(/<source[^>]*>(.*?)<\/source>/) || [])[1] || 'Google News';
-            const cleanTitle = title.replace(/<!\[CDATA\[(.*?)\]\]>/, '$1').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
-            const date = pubDate ? new Date(pubDate).toISOString().slice(0, 10) : todayISO;
-            // Skip old news (>14 days)
-            if ((Date.now() - new Date(pubDate).getTime()) > 14 * 24 * 60 * 60 * 1000) continue;
-            // Generate stable id from URL
-            const id = link.split('/articles/')[1]?.slice(0, 40)?.replace(/[^a-zA-Z0-9]/g, '_') || `news_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-            fetchedNews.push({
-              id,
-              title: cleanTitle.slice(0, 240),
-              summary: cleanTitle.slice(0, 280),
-              date,
-              source,
-              source_url: link,
-              category: q.cat,
-              importance: 'medium',
-            });
+            if (!pubDate || (Date.now() - new Date(pubDate).getTime()) > 14 * 86400000) continue;
+            const id = link.split('/articles/')[1]?.slice(0, 40)?.replace(/[^a-zA-Z0-9]/g, '_') || `n_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            fetched.push({ id, title: title.slice(0, 240), summary: title.slice(0, 280), date: new Date(pubDate).toISOString().slice(0, 10), source, source_url: link, category: q.includes('funding') ? 'funding' : q.includes('regulation') ? 'regulation' : q.includes('conference') ? 'other' : 'release', importance: 'medium' });
           }
-        } catch (e) {
-          results.errors.push(`news query "${q.q}": ${e.message}`);
-        }
+        } catch (e) { results.errors.push(`news "${q.slice(0,30)}": ${e.message}`); }
       }
-
-      // Deduplicate by title (first 60 chars)
       const seen = new Set();
-      const dedupedNews = fetchedNews.filter(n => {
-        const key = n.title.slice(0, 60).toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      }).slice(0, 25);
-
-      if (dedupedNews.length > 0) {
-        // Upsert into ai_news (on conflict, update)
-        const r = await fetch(`${SUPABASE_URL}/rest/v1/ai_news?on_conflict=id`, {
-          method: 'POST',
-          headers: { ...sbHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-          body: JSON.stringify(dedupedNews),
-        });
-        if (!r.ok) throw new Error(`news upsert: HTTP ${r.status} ${await r.text()}`);
-        results.news = dedupedNews.length;
-
-        // Delete news older than 60 days
-        const cutoff = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-        await fetch(`${SUPABASE_URL}/rest/v1/ai_news?date=lt.${cutoff}`, { method: 'DELETE', headers: sbHeaders });
-      }
-    } catch (e) {
-      results.errors.push(`news section: ${e.message}`);
-    }
+      const deduped = fetched.filter(n => { const k = n.title.slice(0, 60).toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 30);
+      if (deduped.length) { await upsert('ai_news', deduped); results.news = deduped.length; }
+      // Cleanup >60 days
+      await fetch(`${SUPABASE_URL}/rest/v1/ai_news?date=lt.${new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10)}`, { method: 'DELETE', headers: sbH });
+    } catch (e) { results.errors.push(`news: ${e.message}`); }
 
     // ============================================
-    // 2. SYSTEMS — Groq LLM refresh
-    // (Asks Groq to update only if there are real changes)
-    // Throttled: only refresh if last update >24h ago
+    // 2. SYSTEMS — daily: model releases check
     // ============================================
     try {
-      const metaR = await fetch(`${SUPABASE_URL}/rest/v1/ai_meta?key=eq.last_systems_update&select=value`, { headers: sbHeaders });
-      const metaArr = await metaR.json();
-      const lastUpdate = metaArr[0]?.value;
-      const hoursSince = lastUpdate ? (Date.now() - new Date(lastUpdate).getTime()) / 3600000 : 999;
+      const existingR = await fetch(`${SUPABASE_URL}/rest/v1/ai_systems?select=id,name,type,latest_model,pricing,estimated_users,market_position,description&order=type.asc,market_position.asc`, { headers: sbH });
+      const existing = await existingR.json();
 
-      if (hoursSince >= 23) {
-        // Fetch existing systems for context
-        const existingR = await fetch(`${SUPABASE_URL}/rest/v1/ai_systems?select=id,name,latest_model,market_position&order=type.asc,market_position.asc`, { headers: sbHeaders });
-        const existing = await existingR.json();
+      const dailyPrompt = `You track the AI landscape. Today is ${todayISO}.
 
-        const prompt = `You are tracking the AI landscape. Today is ${todayISO}.
+Current systems (${existing.length}):
+${existing.map(s => `- ${s.name} (${s.type}): latest_model="${s.latest_model || 'n/a'}"`).join('\n')}
 
-Here are the AI systems we track:
-${JSON.stringify(existing, null, 0)}
+Based on your knowledge through ${todayISO}, have any of these systems released a NEW flagship model in the last 7 days?
 
-Based on your knowledge of AI news through ${todayISO}, are there any UPDATES needed? Specifically:
-- Has any system released a new flagship model since the dates implied by "latest_model"?
-- Has any system been discontinued, acquired, or significantly changed?
-- Are there any NEW major systems that should be added to this list?
+Reply JSON: {"updates": [{"id": "system_id", "latest_model": "new model name"}], "notes": "summary"}
+If nothing changed, return {"updates": [], "notes": "no changes"}.
+Only report changes you are confident about. Do NOT speculate.`;
 
-Reply with ONLY a JSON object in this exact format (no markdown, no commentary):
-{
-  "updates": [
-    {"id": "<existing_id>", "latest_model": "<new model name>"}
-  ],
-  "additions": [],
-  "notes": "<one-line summary>"
-}
-
-If nothing has changed since the last update, return {"updates": [], "additions": [], "notes": "no changes"}.
-Be conservative — only report changes you are confident about.`;
-
-        const completion = await groq.chat.completions.create({
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.2,
-          max_tokens: 2000,
-          response_format: { type: 'json_object' },
+      const daily = await askGroq(dailyPrompt, 2000);
+      for (const u of (daily.updates || [])) {
+        if (!u.id || !u.latest_model) continue;
+        await fetch(`${SUPABASE_URL}/rest/v1/ai_systems?id=eq.${u.id}`, {
+          method: 'PATCH', headers: sbH,
+          body: JSON.stringify({ latest_model: u.latest_model, updated_at: new Date().toISOString() }),
         });
+        results.systems_updated++;
+      }
+    } catch (e) { results.errors.push(`daily systems: ${e.message}`); }
 
-        const refreshData = JSON.parse(completion.choices[0].message.content);
-        const updates = refreshData.updates || [];
+    // ============================================
+    // 3. WEEKLY (Monday): full system refresh + new systems + events
+    // ============================================
+    if (isMonday) {
+      // 3a. Full system data refresh
+      try {
+        const existingR = await fetch(`${SUPABASE_URL}/rest/v1/ai_systems?select=*&order=type.asc,market_position.asc`, { headers: sbH });
+        const existing = await existingR.json();
+        const summary = existing.map(s => `${s.id}|${s.name}|${s.type}|${s.latest_model || ''}|${s.pricing?.pro_price || ''}|${s.estimated_users || ''}`).join('\n');
 
-        // Apply updates (only latest_model field for safety)
-        for (const u of updates) {
-          if (!u.id || !u.latest_model) continue;
+        const weeklyPrompt = `You are an AI industry analyst. Today is ${todayISO}.
+
+Here are the ${existing.length} AI systems we track:
+ID|Name|Type|LatestModel|ProPrice|EstUsers
+${summary}
+
+Tasks (reply as JSON):
+
+1. "pricing_updates": For any system where you KNOW the pricing has changed, return [{"id": "xxx", "pricing": {"free_tier": bool, "free_details": "...", "pro_price": "$X/mo", "enterprise": bool}}]
+
+2. "user_updates": For any system where you have NEWER user count data, return [{"id": "xxx", "estimated_users": "new count"}]
+
+3. "description_updates": For any system that had a MAJOR change (acquisition, pivot, rebrand), return [{"id": "xxx", "description": "new 2-sentence description"}]
+
+4. "new_systems": Any MAJOR new AI system (LLM or coding tool) launched in the last month that we don't track yet? Return [{"id": "slug", "type": "llm|coding", "name": "...", "developer": "...", "owner": "...", "country": "...", "country_code": "xx", "cluster": "...", "description": "...", "latest_model": "...", "pricing": {...}, "estimated_users": "...", "market_position": N, "pros": [...], "cons": [...], "use_cases": [...], "url": "https://..."}]
+
+5. "discontinued": Any systems that have been shut down? Return [{"id": "xxx", "reason": "..."}]
+
+Rules:
+- Only report changes you are CONFIDENT about
+- If unsure, skip it — do not guess
+- For user counts, use qualifier like "estimated" or "~"
+- Return: {"pricing_updates": [], "user_updates": [], "description_updates": [], "new_systems": [], "discontinued": [], "notes": "summary"}`;
+
+        const weekly = await askGroq(weeklyPrompt, 6000);
+
+        // Apply pricing updates
+        for (const u of (weekly.pricing_updates || [])) {
+          if (!u.id || !u.pricing) continue;
           await fetch(`${SUPABASE_URL}/rest/v1/ai_systems?id=eq.${u.id}`, {
-            method: 'PATCH',
-            headers: sbHeaders,
-            body: JSON.stringify({ latest_model: u.latest_model, updated_at: new Date().toISOString() }),
+            method: 'PATCH', headers: sbH,
+            body: JSON.stringify({ pricing: u.pricing, updated_at: new Date().toISOString() }),
           });
-          results.systems++;
+          results.systems_updated++;
         }
 
-        // Update meta timestamp
-        await fetch(`${SUPABASE_URL}/rest/v1/ai_meta?key=eq.last_systems_update`, {
-          method: 'PATCH',
-          headers: sbHeaders,
-          body: JSON.stringify({ value: new Date().toISOString(), updated_at: new Date().toISOString() }),
-        });
-      }
-    } catch (e) {
-      results.errors.push(`systems section: ${e.message}`);
+        // Apply user count updates
+        for (const u of (weekly.user_updates || [])) {
+          if (!u.id || !u.estimated_users) continue;
+          await fetch(`${SUPABASE_URL}/rest/v1/ai_systems?id=eq.${u.id}`, {
+            method: 'PATCH', headers: sbH,
+            body: JSON.stringify({ estimated_users: u.estimated_users, updated_at: new Date().toISOString() }),
+          });
+          results.systems_updated++;
+        }
+
+        // Apply description updates
+        for (const u of (weekly.description_updates || [])) {
+          if (!u.id || !u.description) continue;
+          await fetch(`${SUPABASE_URL}/rest/v1/ai_systems?id=eq.${u.id}`, {
+            method: 'PATCH', headers: sbH,
+            body: JSON.stringify({ description: u.description, updated_at: new Date().toISOString() }),
+          });
+          results.systems_updated++;
+        }
+
+        // Add new systems
+        for (const s of (weekly.new_systems || [])) {
+          if (!s.id || !s.name || !s.type) continue;
+          s.updated_at = new Date().toISOString();
+          await upsert('ai_systems', [s]);
+          results.systems_added++;
+        }
+
+        // Mark discontinued
+        for (const d of (weekly.discontinued || [])) {
+          if (!d.id) continue;
+          await fetch(`${SUPABASE_URL}/rest/v1/ai_systems?id=eq.${d.id}`, {
+            method: 'PATCH', headers: sbH,
+            body: JSON.stringify({ description: `[DISCONTINUED] ${d.reason || 'Shut down.'}`, updated_at: new Date().toISOString() }),
+          });
+          results.systems_updated++;
+        }
+      } catch (e) { results.errors.push(`weekly systems: ${e.message}`); }
+
+      // 3b. New events discovery
+      try {
+        const eventsPrompt = `You are an AI events researcher. Today is ${todayISO}.
+
+List upcoming AI conferences, summits, and expos happening in the next 12 months (${todayISO} to ${new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10)}).
+
+Focus on:
+1. Germany events (highest priority)
+2. European events
+3. Major global AI events (NeurIPS, ICML, Google I/O, etc.)
+
+For each event return:
+{"id": "slug-2026", "name": "Event Name", "date_start": "YYYY-MM-DD", "date_end": "YYYY-MM-DD", "location_city": "City", "location_country": "Country", "region": "germany|europe|world", "type": "conference|expo|summit|workshop", "description": "1-2 sentences", "url": "https://...", "estimated_attendees": "N+" or null, "highlight": true/false}
+
+Return: {"events": [...], "notes": "summary"}
+Only include events you are confident about dates. If unsure of exact date, skip.`;
+
+        const eventsData = await askGroq(eventsPrompt, 4000);
+        const newEvents = (eventsData.events || []).filter(e => e.id && e.name && e.date_start);
+
+        if (newEvents.length > 0) {
+          for (const e of newEvents) e.updated_at = new Date().toISOString();
+          await upsert('ai_events', newEvents);
+          results.events_added = newEvents.length;
+        }
+      } catch (e) { results.errors.push(`weekly events: ${e.message}`); }
     }
 
     // ============================================
-    // 3. EVENTS — Clean up past ones
+    // 4. Cleanup past events (>30 days)
     // ============================================
     try {
-      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
       const r = await fetch(`${SUPABASE_URL}/rest/v1/ai_events?or=(date_end.lt.${cutoff},and(date_end.is.null,date_start.lt.${cutoff}))`, {
-        method: 'DELETE',
-        headers: { ...sbHeaders, 'Prefer': 'return=representation' },
+        method: 'DELETE', headers: { ...sbH, 'Prefer': 'return=representation' },
       });
-      if (r.ok) {
-        const deleted = await r.json();
-        results.events_cleaned = Array.isArray(deleted) ? deleted.length : 0;
-      }
-    } catch (e) {
-      results.errors.push(`events cleanup: ${e.message}`);
-    }
+      if (r.ok) { const d = await r.json(); results.events_cleaned = Array.isArray(d) ? d.length : 0; }
+    } catch (e) { results.errors.push(`events cleanup: ${e.message}`); }
 
     // ============================================
-    // 4. Update meta timestamps
+    // 5. Update meta
     // ============================================
     const now = new Date().toISOString();
-    await fetch(`${SUPABASE_URL}/rest/v1/ai_meta`, {
-      method: 'POST',
-      headers: { ...sbHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify([
-        { key: 'last_news_update', value: now, updated_at: now },
-        { key: 'last_run', value: now, updated_at: now },
-      ]),
-    });
+    await upsert('ai_meta', [
+      { key: 'last_news_update', value: now, updated_at: now },
+      { key: 'last_systems_update', value: now, updated_at: now },
+      { key: 'last_run', value: now, updated_at: now },
+      { key: 'last_run_type', value: isMonday ? 'weekly_full' : 'daily_light', updated_at: now },
+    ]);
 
-    const elapsed = Date.now() - startTime;
     return res.status(200).json({
       ok: true,
-      elapsed_ms: elapsed,
+      run_type: isMonday ? 'weekly_full' : 'daily_light',
+      elapsed_ms: Date.now() - startTime,
       ...results,
     });
   } catch (err) {
