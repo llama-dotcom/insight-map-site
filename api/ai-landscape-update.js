@@ -11,7 +11,7 @@ const Groq = require('groq-sdk');
 
 module.exports = async function handler(req, res) {
   const startTime = Date.now();
-  const results = { news: 0, systems_updated: 0, systems_added: 0, events_added: 0, events_cleaned: 0, errors: [] };
+  const results = { systems_updated: 0, systems_added: 0, events_added: 0, events_cleaned: 0, errors: [] };
 
   try {
     // Auth
@@ -64,82 +64,7 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================
-    // 1. NEWS — Google News RSS (daily)
-    // ============================================
-    try {
-      const queries = [
-        `GPT OpenAI ChatGPT AI release ${year}`,
-        `Claude Anthropic AI release ${year}`,
-        `Gemini Google DeepMind AI ${year}`,
-        `Llama Meta Mistral open source AI ${year}`,
-        `AI funding round billion valuation ${year}`,
-        `EU AI Act regulation enforcement ${year}`,
-        `AI coding tool Cursor Copilot Claude Code ${year}`,
-        `DeepSeek Qwen Chinese AI model ${year}`,
-        `AI conference summit expo ${year}`,
-        `AI startup acquisition merger ${year}`,
-      ];
-      const fetched = [];
-      for (const q of queries) {
-        try {
-          const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en&gl=US&ceid=US:en`;
-          const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-          if (!r.ok) continue;
-          const xml = await r.text();
-          const items = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
-          for (const item of items.slice(0, 3)) {
-            const title = ((item.match(/<title>(.*?)<\/title>/) || [])[1] || '').replace(/<!\[CDATA\[(.*?)\]\]>/, '$1').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
-            const link = (item.match(/<link>(.*?)<\/link>/) || [])[1] || '';
-            const pubDate = (item.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || '';
-            const source = (item.match(/<source[^>]*>(.*?)<\/source>/) || [])[1] || 'Google News';
-            if (!pubDate || (Date.now() - new Date(pubDate).getTime()) > 14 * 86400000) continue;
-            const id = link.split('/articles/')[1]?.slice(0, 40)?.replace(/[^a-zA-Z0-9]/g, '_') || `n_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-            fetched.push({ id, title: title.slice(0, 240), summary: title.slice(0, 280), date: new Date(pubDate).toISOString().slice(0, 10), source, source_url: link, category: q.includes('funding') ? 'funding' : q.includes('regulation') ? 'regulation' : q.includes('conference') ? 'other' : 'release', importance: 'medium' });
-          }
-        } catch (e) { results.errors.push(`news "${q.slice(0,30)}": ${e.message}`); }
-      }
-      const seen = new Set();
-      const deduped = fetched.filter(n => { const k = n.title.slice(0, 60).toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 20);
-
-      if (deduped.length > 0) {
-        // Generate real summaries via Groq BEFORE inserting
-        const batchSize = 5;
-        for (let b = 0; b < deduped.length; b += batchSize) {
-          const batch = deduped.slice(b, b + batchSize);
-          try {
-            const titles = batch.map((n, i) => `${i}. ${n.title}`).join('\n');
-            const sumResp = await askGroq(`You are an AI news editor. For each headline below, write a 5-sentence summary paragraph that explains what happened, who is involved, why it matters for the AI industry, what the impact could be, and relevant context. Be specific and informative.
-
-Headlines:
-${titles}
-
-Reply with JSON: {"summaries": ["paragraph for item 0", "paragraph for item 1", ...]}
-Return exactly ${batch.length} summaries.`, 3000, 'fast');
-
-            const sums = sumResp.summaries || [];
-            for (let i = 0; i < Math.min(sums.length, batch.length); i++) {
-              if (sums[i] && sums[i].length > 30) {
-                deduped[b + i].summary = sums[i];
-              }
-            }
-          } catch (e) { results.errors.push(`news summaries batch ${b}: ${e.message}`); }
-        }
-
-        // Delete ALL existing news, then insert fresh ones with real summaries
-        await fetch(`${SUPABASE_URL}/rest/v1/ai_news?id=neq.___`, { method: 'DELETE', headers: sbH });
-        // Insert fresh
-        const insertR = await fetch(`${SUPABASE_URL}/rest/v1/ai_news`, {
-          method: 'POST', headers: sbH, body: JSON.stringify(deduped),
-        });
-        if (!insertR.ok) throw new Error(`news insert: ${insertR.status} ${await insertR.text()}`);
-        results.news = deduped.length;
-      }
-      // Cleanup >60 days
-      await fetch(`${SUPABASE_URL}/rest/v1/ai_news?date=lt.${new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10)}`, { method: 'DELETE', headers: sbH });
-    } catch (e) { results.errors.push(`news: ${e.message}`); }
-
-    // ============================================
-    // 2. SYSTEMS — daily: model releases check
+    // 1. SYSTEMS — model releases check
     // ============================================
     try {
       const existingR = await fetch(`${SUPABASE_URL}/rest/v1/ai_systems?select=id,name,type,latest_model,pricing,estimated_users,market_position,description&order=type.asc,market_position.asc`, { headers: sbH });
@@ -296,7 +221,6 @@ Only include events you are confident about dates. If unsure of exact date, skip
     // ============================================
     const now = new Date().toISOString();
     await upsert('ai_meta', [
-      { key: 'last_news_update', value: now, updated_at: now },
       { key: 'last_systems_update', value: now, updated_at: now },
       { key: 'last_run', value: now, updated_at: now },
       { key: 'last_run_type', value: 'manual_full', updated_at: now },
