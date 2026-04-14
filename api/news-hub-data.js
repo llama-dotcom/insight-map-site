@@ -35,8 +35,8 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // Cache: 5min browser, 1h CDN
-    res.setHeader('Cache-Control', 'public, s-maxage=3600, max-age=300');
+    // Cache: 1min browser, 5min CDN (cron runs once daily, but keep fresh for updates)
+    res.setHeader('Cache-Control', 'public, s-maxage=300, max-age=60');
     return res.status(200).json(grouped);
   } catch (err) {
     console.error('news-hub-data error:', err);
