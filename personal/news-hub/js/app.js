@@ -125,7 +125,9 @@
   // --- Fetch data ---
   async function loadData() {
     try {
-      const res = await fetch(API_URL);
+      // Cache-bust with hourly granularity — ensures fresh data after cron but allows CDN to cache within the hour
+      const bust = Math.floor(Date.now() / 300000); // changes every 5 min
+      const res = await fetch(`${API_URL}?v=${bust}`);
       if (!res.ok) throw new Error('API error ' + res.status);
       const data = await res.json();
 
