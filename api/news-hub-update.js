@@ -37,16 +37,27 @@ module.exports = async function handler(req, res) {
     };
     const groq = new Groq({ apiKey: GROQ_KEY });
 
-    // --- Helper: ask Groq ---
+    // --- Helper: ask Groq with automatic fallback to lighter model on rate limit ---
     async function askGroq(prompt, maxTokens = 4000) {
-      const c = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.15,
-        max_tokens: maxTokens,
-        response_format: { type: 'json_object' },
-      });
-      return JSON.parse(c.choices[0].message.content);
+      const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+      let lastError = null;
+      for (const model of models) {
+        try {
+          const c = await groq.chat.completions.create({
+            model,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.15,
+            max_tokens: maxTokens,
+            response_format: { type: 'json_object' },
+          });
+          return JSON.parse(c.choices[0].message.content);
+        } catch (err) {
+          lastError = err;
+          // Fallback only on rate limit (429)
+          if (!String(err).includes('429') && !String(err).includes('rate_limit')) throw err;
+        }
+      }
+      throw lastError;
     }
 
     // --- Helper: Supabase upsert ---
