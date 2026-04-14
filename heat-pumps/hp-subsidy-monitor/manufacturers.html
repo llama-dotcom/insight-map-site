@@ -71,10 +71,37 @@ const SB_KEY='sb_publishable_aTjldMpez0BhB1L5ubPuNA_KaOGXG1q';
 
 async function loadNews(){
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/news?category=eq.manufacturer&order=created_at.desc&limit=100`,
+    // Load ALL news (not just category=manufacturer), then filter client-side for manufacturer mentions
+    // This catches both dedicated manufacturer articles AND incidental mentions in country news
+    const res = await fetch(`${SB_URL}/rest/v1/news?order=created_at.desc&limit=300`,
       { headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const news = await res.json();
+    const allNews = await res.json();
+
+    // Known brands — if a new brand becomes prominent, it appears naturally in news
+    const BRANDS = ['Bosch','Vaillant','Viessmann','Daikin','Stiebel-Eltron','Stiebel Eltron',
+      'Nibe','Mitsubishi','Panasonic','Samsung','LG Electronics','Wolf','Atlantic','Ariston',
+      'Carrier','Toshiba','Buderus','Alpha Innotec','Trane','Fujitsu','Midea','Hisense',
+      'Waterkotte','Ochsner','Weishaupt','Glen Dimplex','Thermia','CTC','Danfoss',
+      'BDR Thermea','Grundfos','NIBE'];
+
+    // Filter: article must mention a brand in title or description
+    const news = [];
+    for (const n of allNews) {
+      if (n.category === 'manufacturer') { news.push(n); continue; } // always include dedicated mfg news
+      const text = ((n.title||'') + ' ' + (n.description||'')).toLowerCase();
+      for (const brand of BRANDS) {
+        // Avoid false positives: "LG" alone is too short, require "LG " or "LG," or "LG Electronics"
+        const bl = brand.toLowerCase();
+        if (bl.length <= 2) {
+          if (text.includes(bl + ' ') || text.includes(bl + ',') || text.includes(bl + '.') || text.includes(bl + "'")) {
+            n._brand = brand; news.push(n); break;
+          }
+        } else if (text.includes(bl)) {
+          n._brand = brand; news.push(n); break;
+        }
+      }
+    }
 
     if (!news.length) {
       document.getElementById('content').innerHTML = '<div class="empty-state">No manufacturer news yet. News will appear after the next daily update (08:00 CET).</div>';
@@ -101,13 +128,13 @@ async function loadNews(){
       return null;
     }
 
-    // Extract manufacturer name from title ("ManufacturerName: headline")
+    // Group by manufacturer: prefer _brand (detected), fallback to title prefix "Name: headline"
     const byMfg = {};
     for (const n of news) {
-      let mfg = 'Other';
-      const colonIdx = (n.title || '').indexOf(':');
-      if (colonIdx > 0 && colonIdx < 30) {
-        mfg = n.title.slice(0, colonIdx).trim();
+      let mfg = n._brand || 'Other';
+      if (mfg === 'Other') {
+        const colonIdx = (n.title || '').indexOf(':');
+        if (colonIdx > 0 && colonIdx < 30) mfg = n.title.slice(0, colonIdx).trim();
       }
       if (!byMfg[mfg]) byMfg[mfg] = [];
       byMfg[mfg].push(n);
