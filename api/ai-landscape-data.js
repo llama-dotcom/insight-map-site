@@ -25,9 +25,8 @@ module.exports = async function handler(req, res) {
     };
 
     // Fetch all data in parallel
-    const [systems, news, events, synergies, meta] = await Promise.all([
+    const [systems, events, synergies, meta] = await Promise.all([
       fetchTable('ai_systems?select=*&order=type.asc,market_position.asc'),
-      fetchTable('ai_news?select=*&order=date.desc&limit=30'),
       fetchTable('ai_events?select=*&order=date_start.asc'),
       fetchTable('ai_synergies?select=*&order=sort_order.asc'),
       fetchTable('ai_meta?select=*'),
@@ -48,7 +47,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       llms,
       coding,
-      news,
       events,
       synergies,
       meta: metaObj,
