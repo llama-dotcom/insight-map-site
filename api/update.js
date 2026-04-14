@@ -206,7 +206,11 @@ module.exports = async function handler(req, res) {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
     });
     const countries = await countriesRes.json();
-    const topCountries = countries.slice(0, 15);
+    // Tiered news: top 5 countries = 6 articles, top 6-10 = 3 articles, rest = skip
+    // Top 5 by verified 2025 market data: DE, FR, NL, GB, IT
+    const TOP5 = new Set(['DE','FR','NL','GB','IT']);
+    const TOP10 = new Set(['SE','PL','ES','AT','BE','CH']);
+    const topCountries = countries.filter(c => TOP5.has(c.id) || TOP10.has(c.id));
 
     // === DAILY: Manufacturer news FIRST (runs before country news to ensure quota) ===
     const currentYear = today.getFullYear(); // dynamic year — no hardcoded "2026"
@@ -321,7 +325,7 @@ module.exports = async function handler(req, res) {
         };
         const extraQuery = extraQueries[country.id];
         const extraRssUrl = extraQuery ? `https://news.google.com/rss/search?q=${encodeURIComponent(extraQuery)}&hl=en&gl=US&ceid=US:en` : null;
-        const maxArticles = ['DE','FR','GB'].includes(country.id) ? 6 : 4; // optimized: match display limit, save Groq tokens
+        const maxArticles = TOP5.has(country.id) ? 6 : 3; // Top 5 = 6 articles, Top 6-10 = 3 articles
 
         let articles = [];
         // Fetch from both English and local language RSS
