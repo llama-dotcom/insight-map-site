@@ -26,7 +26,7 @@ module.exports = async function handler(req, res) {
 
     // Group by section
     const grouped = {};
-    const sections = ['politics', 'esslingen', 'saratov', 'beauty', 'carnivore', 'tech'];
+    const sections = ['politics', 'tech', 'esslingen', 'saratov'];
     for (const s of sections) grouped[s] = [];
 
     for (const item of allNews) {
@@ -35,7 +35,7 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // Cache: 1min browser, 5min CDN (cron runs once daily, but keep fresh for updates)
+    // Cache: 1min browser, 5min CDN
     res.setHeader('Cache-Control', 'public, s-maxage=300, max-age=60');
     return res.status(200).json(grouped);
   } catch (err) {
