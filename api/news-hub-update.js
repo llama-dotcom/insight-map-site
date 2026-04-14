@@ -192,17 +192,11 @@ ${titlesForGroq}
 Reply with JSON: {"selected": [{"index": 1, "title_ru": "Заголовок на русском языке", "summary": "Подробное описание на русском языке, 4-6 предложений"}]}
 Only select truly relevant articles. Quality over quantity. Both title_ru and summary MUST be in Russian Cyrillic.`, 5000);
 
-        // Helper: check if text contains Cyrillic characters
-        const isCyrillic = (s) => /[\u0400-\u04FF]/.test(s || '');
-
         // 5. Build rows for Supabase
         const rows = [];
         for (const sel of (filterResult.selected || [])) {
           const idx = sel.index - 1;
           if (idx < 0 || idx >= recent.length) continue;
-
-          // Require Russian (Cyrillic) title — skip if Groq failed to translate
-          if (!sel.title_ru || !isCyrillic(sel.title_ru)) continue;
 
           const item = recent[idx];
           const id = `${sectionId}_${item.link.split('/articles/')[1]?.slice(0, 30)?.replace(/[^a-zA-Z0-9]/g, '_') || Date.now() + '_' + Math.random().toString(36).slice(2, 8)}`;
@@ -210,8 +204,9 @@ Only select truly relevant articles. Quality over quantity. Both title_ru and su
           rows.push({
             id,
             section: sectionId,
-            title: sel.title_ru.slice(0, 300),
-            summary: (isCyrillic(sel.summary) ? sel.summary : '').slice(0, 800),
+            // Prefer Russian, fallback to original if translation missing
+            title: (sel.title_ru || item.title).slice(0, 300),
+            summary: (sel.summary || '').slice(0, 800),
             url: item.link,
             source: item.source || 'Google News',
             published_at: new Date(item.pubDate).toISOString(),
