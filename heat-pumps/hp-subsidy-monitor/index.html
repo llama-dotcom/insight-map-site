@@ -462,7 +462,7 @@ function renderCG(f){
   const s=[...fl].sort((a,b)=>(b.sortWeight||b.s)-(a.sortWeight||a.s));
   document.getElementById('c-grid').innerHTML=s.map(c=>{
     const mkt=c.s>0?`${c.s}k units (${c.yr})`:'N/A';
-    const maxSub=c.ms>0?`max €${c.ms.toLocaleString()}`:'no subsidy';
+    const maxSub=c.ms>0?`max subsidy €${c.ms.toLocaleString()}`:'no subsidy';
     return`<div class="gc c-card" onclick="openM('${c.n}')">
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="font-size:1.4rem;">${c.f}</span>
