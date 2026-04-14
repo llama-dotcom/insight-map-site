@@ -226,7 +226,8 @@ module.exports = async function handler(req, res) {
     // Top 5 by verified 2025 market data: DE, FR, NL, GB, IT
     const TOP5 = new Set(['DE','FR','NL','GB','IT']);
     const TOP10 = new Set(['SE','PL','ES','AT','BE','CH']);
-    const topCountries = countries.filter(c => TOP5.has(c.id) || TOP10.has(c.id));
+    // Top 5 = 6 articles, Top 6-11 = 3 articles, rest = 1 article
+    const topCountries = countries;
 
     // === DAILY: Manufacturer news FIRST (runs before country news to ensure quota) ===
     const currentYear = today.getFullYear(); // dynamic year — no hardcoded "2026"
@@ -337,7 +338,7 @@ module.exports = async function handler(req, res) {
         };
         const extraQuery = extraQueries[country.id];
         const extraRssUrl = extraQuery ? `https://news.google.com/rss/search?q=${encodeURIComponent(extraQuery)}&hl=en&gl=US&ceid=US:en` : null;
-        const maxArticles = TOP5.has(country.id) ? 6 : 3; // Top 5 = 6 articles, Top 6-10 = 3 articles
+        const maxArticles = TOP5.has(country.id) ? 6 : TOP10.has(country.id) ? 3 : 1; // Top5=6, Top6-11=3, rest=1
 
         let articles = [];
         // Fetch from both English and local language RSS
