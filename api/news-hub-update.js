@@ -159,16 +159,26 @@ module.exports = async function handler(req, res) {
         label: 'Tech & AI',
         maxAge: 10,
         queries: [
+          // General tech & innovation
           { q: 'technology breakthrough innovation discovery', lang: 'en', gl: 'US' },
           { q: 'new gadget product launch consumer tech', lang: 'en', gl: 'US' },
-          { q: 'artificial intelligence new model release', lang: 'en', gl: 'US' },
           { q: 'biotech medical technology breakthrough', lang: 'en', gl: 'US' },
           { q: 'robotics automation industrial innovation', lang: 'en', gl: 'US' },
           { q: 'space technology exploration mission', lang: 'en', gl: 'US' },
           { q: 'quantum computing energy technology', lang: 'en', gl: 'US' },
           { q: 'engineering invention science innovation', lang: 'en', gl: 'US' },
+          // AI-specific (inherited from AI Landscape)
+          { q: 'GPT OpenAI ChatGPT new release', lang: 'en', gl: 'US' },
+          { q: 'Claude Anthropic new model release', lang: 'en', gl: 'US' },
+          { q: 'Gemini Google DeepMind AI', lang: 'en', gl: 'US' },
+          { q: 'Llama Meta Mistral open source AI', lang: 'en', gl: 'US' },
+          { q: 'AI funding round billion valuation', lang: 'en', gl: 'US' },
+          { q: 'EU AI Act regulation enforcement', lang: 'en', gl: 'US' },
+          { q: 'AI coding tool Cursor Copilot Claude Code', lang: 'en', gl: 'US' },
+          { q: 'DeepSeek Qwen Chinese AI model', lang: 'en', gl: 'US' },
+          { q: 'AI startup acquisition merger', lang: 'en', gl: 'US' },
         ],
-        filterPrompt: 'You are a technology innovations editor covering ALL sectors. Keep articles about: genuine breakthroughs and inventions across ANY field (AI, biotech, medtech, energy, materials, robotics, space, transport, engineering, consumer electronics, quantum computing). Focus on real innovations — new products, scientific discoveries, engineering feats, prototype demonstrations. Remove: stock market noise, opinion pieces, minor software updates, recycled PR without substance, corporate earnings reports.',
+        filterPrompt: 'You are a technology innovations editor covering ALL sectors including AI. Keep articles about: genuine breakthroughs and inventions across ANY field (AI/LLMs, biotech, medtech, energy, materials, robotics, space, transport, engineering, consumer electronics, quantum computing); AI-specific news — new model releases (GPT, Claude, Gemini, Llama, DeepSeek, Qwen etc.), AI funding rounds, AI regulation (EU AI Act), AI coding tools (Cursor, Copilot, Claude Code), major AI acquisitions. Focus on real innovations — new products, scientific discoveries, engineering feats, prototype demonstrations. Remove: stock market noise, opinion pieces, minor software updates, recycled PR without substance, corporate earnings reports, generic "AI will change everything" fluff.',
       },
     };
 
