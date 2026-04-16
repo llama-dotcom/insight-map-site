@@ -160,7 +160,10 @@ async function loadNews(){
           displayTitle = displayTitle.slice(displayTitle.indexOf(':') + 1).trim();
         }
         html += `<div class="gc n-card ${ic}">`;
-        html += `<div class="n-mt"><span>${n.date || ''}</span><span class="imp ${bc}">${n.impact || 'info'}</span></div>`;
+        // Format created_at as dd.mm.yyyy (more precise than month-only n.date)
+        const dt = n.created_at ? new Date(n.created_at) : null;
+        const dateStr = dt ? `${String(dt.getDate()).padStart(2,'0')}.${String(dt.getMonth()+1).padStart(2,'0')}.${dt.getFullYear()}` : (n.date||'');
+        html += `<div class="n-mt"><span>${dateStr}</span><span class="imp ${bc}">${n.impact || 'info'}</span></div>`;
         html += `<div class="n-tt">${displayTitle}</div>`;
         html += `<div class="n-ds">${n.description || ''}</div>`;
         if (n.source_url) html += `<div class="n-sr"><a href="${n.source_url}" target="_blank">${n.source_name || 'Source'} →</a></div>`;
