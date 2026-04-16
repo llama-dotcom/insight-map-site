@@ -14,11 +14,11 @@ module.exports = async function handler(req, res) {
   const results = { total: 0, by_section: {}, errors: [] };
 
   try {
-    // --- Auth ---
+    // --- Auth: fail-closed. Allow Vercel cron OR bearer CRON_SECRET. ---
     const isVercelCron = req.headers['x-vercel-cron'] === '1';
     const cronSecret = process.env.CRON_SECRET_NEWS_HUB;
     const authHeader = req.headers.authorization;
-    if (!isVercelCron && cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    if (!isVercelCron && (!cronSecret || authHeader !== `Bearer ${cronSecret}`)) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
