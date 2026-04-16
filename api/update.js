@@ -234,12 +234,17 @@ module.exports = async function handler(req, res) {
     try {
       // Top HP manufacturers by European market share (hydronic focus)
       // Grouped with OR for efficiency: 1 query catches multiple brands
+      // DE locale works best for HP manufacturer news (German press dominates HP coverage)
+      // One query per major brand to maximize results
       const mfgRssFeeds = [
-        { q: 'Daikin OR Bosch OR Vaillant heat pump', hl: 'en', gl: 'US', ceid: 'US:en' },
-        { q: 'Viessmann OR "Stiebel Eltron" OR NIBE heat pump', hl: 'en', gl: 'US', ceid: 'US:en' },
-        { q: 'Mitsubishi OR Panasonic OR Samsung heat pump', hl: 'en', gl: 'US', ceid: 'US:en' },
-        { q: 'Daikin OR Bosch OR Vaillant Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' },
-        { q: 'Atlantic OR Ariston OR Midea heat pump', hl: 'en', gl: 'US', ceid: 'US:en' }
+        { q: 'Daikin Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' },
+        { q: 'Bosch Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' },
+        { q: 'Vaillant Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' },
+        { q: 'Viessmann Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' },
+        { q: 'NIBE Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' },
+        { q: 'Stiebel Eltron Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' },
+        { q: 'Mitsubishi Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' },
+        { q: 'Panasonic Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' }
       ];
       let mfgArticles = [];
       for (const feed of mfgRssFeeds) {
