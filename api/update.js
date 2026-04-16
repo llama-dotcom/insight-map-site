@@ -576,12 +576,13 @@ module.exports = async function handler(req, res) {
             elec = yd.A.electricity_eur_kwh; gas = yd.A.gas_eur_kwh;
           }
           const ratio = (elec && gas) ? +(elec / gas).toFixed(2) : null;
-          const patch = {
-            electricity_price: elec,
-            gas_price: gas,
-            price_ratio: ratio,
-            updated_at: nowIso
-          };
+          // Защита: патчим только не-null значения. Если Eurostat молчит по
+          // gas (как у Польши с 2023-S2), сохраняем последнее известное значение
+          // вместо перезаписи NULL.
+          const patch = { updated_at: nowIso };
+          if (elec != null) patch.electricity_price = elec;
+          if (gas != null) patch.gas_price = gas;
+          if (ratio != null) patch.price_ratio = ratio;
           const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/countries?id=eq.${code}`, {
             method: 'PATCH',
             headers: {
