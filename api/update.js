@@ -266,8 +266,9 @@ module.exports = async function handler(req, res) {
               }
             }
           }
-        } catch (e) { /* skip feed */ }
+        } catch (e) { results.mfg_feed_errors = (results.mfg_feed_errors || 0) + 1; }
       }
+      results.mfg_articles_fetched = mfgArticles.length;
       if (mfgArticles.length > 0) {
         const mfgList = mfgArticles.map((a, i) => `${i+1}. "${a.title}" (${a.source}, ${a.date})`).join('\n');
         const mfgCompletion = await groqChat(groq, [
@@ -278,6 +279,7 @@ module.exports = async function handler(req, res) {
         if (mfgContent) {
           let mfgItems;
           try { mfgItems = JSON.parse(mfgContent).items || []; } catch (e) { mfgItems = []; }
+          results.mfg_items_extracted = mfgItems.length;
           for (const item of mfgItems) {
             if (!item.title || !item.manufacturer) continue;
             const origArticle = mfgArticles[item.original_index - 1] || mfgArticles[0];
