@@ -317,7 +317,7 @@ module.exports = async function handler(req, res) {
             });
             const existing = await existCheck.json();
             if (existing.length > 0) continue;
-            await fetch(`${SUPABASE_URL}/rest/v1/news`, {
+            const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/news`, {
               method: 'POST',
               headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
               body: JSON.stringify({
@@ -327,11 +327,42 @@ module.exports = async function handler(req, res) {
                 category: 'manufacturer'
               })
             });
-            results.mfg_news = (results.mfg_news || 0) + 1;
+            if (insertRes.ok) {
+              results.mfg_news = (results.mfg_news || 0) + 1;
+            } else {
+              const errBody = await insertRes.text().catch(() => '');
+              results.errors.push(`MFG insert HTTP ${insertRes.status}: ${errBody.slice(0, 150)}`);
+              results.mfg_insert_failed = (results.mfg_insert_failed || 0) + 1;
+            }
           }
         }
       }
     } catch (e) { results.errors.push(`Manufacturer news: ${e.message}`); }
+
+    // === DAILY: EHPA EU-level policy feed (supplements country-specific Google News) ===
+    // EHPA covers EU-wide policy announcements, industry letters, country-specific updates.
+    // We fetch once, then per-country filter by country-name match to add to that country's article pool.
+    let ehpaArticles = [];
+    try {
+      const ehpaRes = await fetch('https://www.ehpa.org/feed/');
+      const ehpaText = await ehpaRes.text();
+      const ehpaRegex = /<item>[\s\S]*?<title>([\s\S]*?)<\/title>[\s\S]*?<link>([\s\S]*?)<\/link>[\s\S]*?<pubDate>([\s\S]*?)<\/pubDate>(?:[\s\S]*?<description>([\s\S]*?)<\/description>)?[\s\S]*?<\/item>/g;
+      let m;
+      while ((m = ehpaRegex.exec(ehpaText)) !== null) {
+        const pubDate = new Date(m[3].trim());
+        const daysDiff = (today - pubDate) / (1000 * 60 * 60 * 24);
+        if (daysDiff <= 14) {
+          ehpaArticles.push({
+            title: m[1].trim().replace(/<!\[CDATA\[|\]\]>/g, ''),
+            url: m[2].trim(),
+            date: pubDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+            source: 'EHPA',
+            description: (m[4] || '').trim().replace(/<!\[CDATA\[|\]\]>/g, '').slice(0, 300)
+          });
+        }
+      }
+      results.ehpa_articles_fetched = ehpaArticles.length;
+    } catch (e) { results.errors.push(`EHPA: ${e.message}`); }
 
     // === DAILY: Country news from Google News RSS ===
     for (const country of topCountries) {
@@ -411,6 +442,15 @@ module.exports = async function handler(req, res) {
               }
             }
           } catch (e) { /* skip this feed */ }
+        }
+
+        // Merge relevant EHPA articles (EU-level source) — match by country name in title/description
+        for (const ehpa of ehpaArticles) {
+          if (articles.length >= maxArticles) break;
+          const hay = (ehpa.title + ' ' + ehpa.description).toLowerCase();
+          if (hay.includes(country.name.toLowerCase()) && !articles.some(a => a.title === ehpa.title)) {
+            articles.push({ title: ehpa.title, url: ehpa.url, date: ehpa.date, source: ehpa.source });
+          }
         }
 
         if (articles.length === 0) continue;
