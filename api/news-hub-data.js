@@ -6,8 +6,9 @@
 module.exports = async function handler(req, res) {
   try {
     // Use ANON key — read-only, RLS-enforced. Never use service_role in a public endpoint.
-    const SUPABASE_URL = process.env.SUPABASE_URL_NEWS_HUB;
-    const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY_NEWS_HUB;
+    // Strip whitespace defensively — Vercel UI sometimes preserves line breaks on paste.
+    const SUPABASE_URL = (process.env.SUPABASE_URL_NEWS_HUB || '').trim();
+    const SUPABASE_KEY = (process.env.SUPABASE_ANON_KEY_NEWS_HUB || '').replace(/\s+/g, '');
     if (!SUPABASE_URL || !SUPABASE_KEY) {
       return res.status(500).json({ error: 'Missing env vars' });
     }
@@ -41,6 +42,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json(grouped);
   } catch (err) {
     console.error('news-hub-data error:', err);
-    return res.status(500).json({ error: err.message });
+    // Don't leak internal details to public
+    return res.status(500).json({ error: 'Internal error' });
   }
 };
