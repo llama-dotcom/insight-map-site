@@ -725,6 +725,11 @@ module.exports = async function handler(req, res) {
       email_alert: results.email_alert || null,
       monthly_run: runMonthly,
       forced_run: forcePrices,
+      mfg_articles_fetched: results.mfg_articles_fetched || 0,
+      mfg_items_extracted: results.mfg_items_extracted || 0,
+      mfg_news_saved: results.mfg_news || 0,
+      cooling_post_added: results.cooling_post_added || 0,
+      ehpa_articles_fetched: results.ehpa_articles_fetched || 0,
       errors: results.errors
     });
 
