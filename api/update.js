@@ -114,6 +114,54 @@ async function fetchEcbRate(fromCurrency) {
 }
 
 // =============================================================
+// HELPER: Decode Google News redirect URL → direct article link
+// Based on googlenewsdecoder (Python). Falls back to original URL.
+// =============================================================
+async function decodeGoogleNewsUrl(sourceUrl) {
+  try {
+    const urlObj = new URL(sourceUrl);
+    if (urlObj.hostname !== 'news.google.com') return sourceUrl;
+    const pathParts = urlObj.pathname.split('/');
+    const base64Str = pathParts[pathParts.length - 1];
+    if (!base64Str || base64Str.length < 20) return sourceUrl;
+
+    // Step 1: Fetch Google News article page → extract signature + timestamp
+    const articleUrl = `https://news.google.com/articles/${base64Str}`;
+    const htmlRes = await fetch(articleUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0' }
+    });
+    if (!htmlRes.ok) return sourceUrl;
+    const html = await htmlRes.text();
+
+    const sigMatch = html.match(/data-n-a-sg="([^"]+)"/);
+    const tsMatch = html.match(/data-n-a-ts="([^"]+)"/);
+    if (!sigMatch || !tsMatch) return sourceUrl;
+
+    // Step 2: POST to batchexecute → decode URL
+    const payload = [
+      'Fbv4je',
+      `["garturlreq",[["X","X",["X","X"],null,null,1,1,"US:en",null,1,null,null,null,null,null,0,1],"X","X",1,[1,1,1],1,1,null,0,0,null,0],"${base64Str}",${tsMatch[1]},"${sigMatch[1]}"]`
+    ];
+    const batchRes = await fetch('https://news.google.com/_/DotsSplashUi/data/batchexecute', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0'
+      },
+      body: `f.req=${encodeURIComponent(JSON.stringify([[payload]]))}`
+    });
+    if (!batchRes.ok) return sourceUrl;
+    const batchText = await batchRes.text();
+    const jsonPart = batchText.split('\n\n')[1];
+    const parsed = JSON.parse(jsonPart);
+    const decodedUrl = JSON.parse(parsed[0][2])[1];
+    return decodedUrl || sourceUrl;
+  } catch (e) {
+    return sourceUrl; // Fallback: keep Google redirect
+  }
+}
+
+// =============================================================
 // HELPER: Batch UPSERT into energy_prices (one HTTP call for many rows)
 // =============================================================
 async function upsertEnergyPrices(SUPABASE_URL, SUPABASE_KEY, rows) {
@@ -303,7 +351,7 @@ module.exports = async function handler(req, res) {
         const mfgList = mfgArticles.map((a, i) => `${i+1}. "${a.title}" (${a.source}, ${a.date})`).join('\n');
         const mfgCompletion = await groqChat(groq, [
             { role: 'system', content: 'You curate PRODUCT-focused news about heat pump manufacturers. Return JSON only.' },
-            { role: 'user', content: `News articles potentially about heat pump manufacturers:\n\n${mfgList}\n\n=== ACCEPT (must be about a SPECIFIC named brand) ===\n• New heat pump model / product launch (e.g., "LG launches Therma V R290")\n• Refrigerant or technology release (R290, R32, propane, CO2)\n• Factory news (new plant, capacity expansion, layoffs, relocation)\n• M&A / partnerships / acquisitions involving a brand\n• Financial results / sales volumes by brand\n• New B2B distribution or rental fleet from a brand\n\n=== REJECT (do NOT include even if a brand is mentioned) ===\n• Subsidy / grant / funding programs\n• Government policy / regulation / EPBD / tax credit\n• Generic market trend articles ("heat pump sales up in Country X")\n• Energy price news / electricity / gas tariffs\n• Installation tips / consumer guides / buying advice\n\nFor each ACCEPTED article identify the MANUFACTURER NAME (e.g., "Bosch", "Daikin", "Vaillant", "LG", "NIBE").\n\nIMPORTANT: If multiple articles describe the SAME event from different outlets, merge into ONE summary.\n\nReturn: {"items": [{"title": "ManufacturerName: headline max 80 chars", "description": "4-6 sentences. Include: what exactly was announced, which specific product/model names, key specs if available (refrigerant R290/R32, capacity kW, COP/SCOP), what market or region it targets, and why it matters for the industry.", "impact": "critical|medium|info", "manufacturer": "ManufacturerName", "original_index": number}]}\n\nIf NO articles match ACCEPT criteria: {"items": []}` }
+            { role: 'user', content: `News articles potentially about heat pump manufacturers:\n\n${mfgList}\n\n=== ACCEPT (must be about a SPECIFIC named brand) ===\n• New heat pump model / product launch (e.g., "LG launches Therma V R290")\n• Refrigerant or technology release (R290, R32, propane, CO2)\n• Factory news (new plant, capacity expansion, layoffs, relocation)\n• M&A / partnerships / acquisitions involving a brand\n• Financial results / sales volumes by brand\n• New B2B distribution or rental fleet from a brand\n\n=== REJECT (do NOT include even if a brand is mentioned) ===\n• Subsidy / grant / funding programs\n• Government policy / regulation / EPBD / tax credit\n• Generic market trend articles ("heat pump sales up in Country X")\n• Energy price news / electricity / gas tariffs\n• Installation tips / consumer guides / buying advice\n\nFor each ACCEPTED article identify the MANUFACTURER NAME (e.g., "Bosch", "Daikin", "Vaillant", "LG", "NIBE").\nIf an article discusses MULTIPLE manufacturers together (e.g., "Bosch, Vaillant and Viessmann face competition from Chinese brands"), set manufacturer to "Mixed".\n\nIMPORTANT: If multiple articles describe the SAME event from different outlets, merge into ONE summary.\n\nReturn: {"items": [{"title": "headline max 80 chars (no brand prefix for Mixed)", "description": "4-6 sentences. Include: what exactly was announced, which specific product/model names, key specs if available (refrigerant R290/R32, capacity kW, COP/SCOP), what market or region it targets, and why it matters for the industry.", "impact": "critical|medium|info", "manufacturer": "ManufacturerName or Mixed", "original_index": number}]}\n\nIf NO articles match ACCEPT criteria: {"items": []}` }
           ], { temperature: 0.2, max_tokens: 1500, response_format: { type: 'json_object' } });
         const mfgContent = mfgCompletion.choices[0]?.message?.content;
         if (mfgContent) {
@@ -313,6 +361,8 @@ module.exports = async function handler(req, res) {
           for (const item of mfgItems) {
             if (!item.title || !item.manufacturer) continue;
             const origArticle = mfgArticles[item.original_index - 1] || mfgArticles[0];
+            // Decode Google News redirect → direct article URL (fallback: keep original)
+            const directUrl = await decodeGoogleNewsUrl(origArticle.url || '');
             const existCheck = await fetch(`${SUPABASE_URL}/rest/v1/news?category=eq.manufacturer&title=eq.${encodeURIComponent(item.title)}&limit=1`, {
               headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
             });
@@ -324,7 +374,7 @@ module.exports = async function handler(req, res) {
               body: JSON.stringify({
                 country_id: 'MFG', date: origArticle.date, title: item.title,
                 description: item.description || '', impact: item.impact || 'info',
-                source_name: origArticle.source || '', source_url: origArticle.url || '',
+                source_name: origArticle.source || '', source_url: directUrl || origArticle.url || '',
                 category: 'manufacturer'
               })
             });
@@ -487,13 +537,15 @@ module.exports = async function handler(req, res) {
             results.alerts.push({ country: country.name, title: item.title });
           }
 
+          // Decode Google News redirect → direct article URL (fallback: keep original)
+          const directNewsUrl = await decodeGoogleNewsUrl(origArticle.url || '');
           await fetch(`${SUPABASE_URL}/rest/v1/news`, {
             method: 'POST',
             headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
             body: JSON.stringify({
               country_id: country.id, date: origArticle.date, title: item.title,
               description: item.description || '', impact: item.impact || 'info',
-              source_name: origArticle.source || '', source_url: origArticle.url || '', category: 'subsidy'
+              source_name: origArticle.source || '', source_url: directNewsUrl || origArticle.url || '', category: 'subsidy'
             })
           });
           results.news++;
