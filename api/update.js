@@ -162,6 +162,38 @@ async function decodeGoogleNewsUrl(sourceUrl) {
 }
 
 // =============================================================
+// HELPER: Fetch article text from URL (for Llama context)
+// Returns first ~800 chars of article body, or empty string on failure.
+// =============================================================
+async function fetchArticleText(url) {
+  try {
+    if (!url || url.includes('news.google.com')) return '';
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HPSubsidyBot/1.0)' },
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!res.ok) return '';
+    const html = await res.text();
+    // Strip tags, scripts, styles → plain text
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+      .replace(/<header[\s\S]*?<\/header>/gi, '')
+      .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&[a-z]+;/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    // Take ~800 chars from the middle of text (skip nav/boilerplate at start)
+    const start = Math.min(200, Math.floor(text.length * 0.1));
+    return text.slice(start, start + 800).trim();
+  } catch (e) {
+    return '';
+  }
+}
+
+// =============================================================
 // HELPER: Batch UPSERT into energy_prices (one HTTP call for many rows)
 // =============================================================
 async function upsertEnergyPrices(SUPABASE_URL, SUPABASE_KEY, rows) {
@@ -348,10 +380,19 @@ module.exports = async function handler(req, res) {
 
       results.mfg_articles_fetched = mfgArticles.length;
       if (mfgArticles.length > 0) {
-        const mfgList = mfgArticles.map((a, i) => `${i+1}. "${a.title}" (${a.source}, ${a.date})${a.snippet ? ' — ' + a.snippet : ''}`).join('\n');
+        // Decode Google News URLs + fetch article text for Llama context
+        for (const a of mfgArticles) {
+          a.directUrl = await decodeGoogleNewsUrl(a.url);
+          a.text = await fetchArticleText(a.directUrl || a.url);
+        }
+        const mfgList = mfgArticles.map((a, i) => {
+          let entry = `${i+1}. "${a.title}" (${a.source}, ${a.date})`;
+          if (a.text) entry += `\n   Article excerpt: ${a.text.slice(0, 500)}`;
+          return entry;
+        }).join('\n\n');
         const mfgCompletion = await groqChat(groq, [
-            { role: 'system', content: 'You curate PRODUCT-focused news about heat pump manufacturers. Return JSON only. CRITICAL: You only have article HEADLINES — you have NOT read the articles. Do NOT invent or guess content beyond what the headline says.' },
-            { role: 'user', content: `News articles potentially about heat pump manufacturers:\n\n${mfgList}\n\n=== ACCEPT (must be about a SPECIFIC named brand) ===\n• New heat pump model / product launch (e.g., "LG launches Therma V R290")\n• Refrigerant or technology release (R290, R32, propane, CO2)\n• Factory news (new plant, capacity expansion, layoffs, relocation)\n• M&A / partnerships / acquisitions involving a brand\n• Financial results / sales volumes by brand\n• New B2B distribution or rental fleet from a brand\n\n=== REJECT (do NOT include even if a brand is mentioned) ===\n• Subsidy / grant / funding programs\n• Government policy / regulation / EPBD / tax credit\n• Generic market trend articles ("heat pump sales up in Country X")\n• Energy price news / electricity / gas tariffs\n• Installation tips / consumer guides / buying advice\n\nFor each ACCEPTED article identify the MANUFACTURER NAME (e.g., "Bosch", "Daikin", "Vaillant", "LG", "NIBE").\nIf an article discusses MULTIPLE manufacturers together (e.g., "Bosch, Vaillant and Viessmann face competition from Chinese brands"), set manufacturer to "Mixed".\n\nIMPORTANT: If multiple articles describe the SAME event from different outlets, merge into ONE summary.\n\nReturn: {"items": [{"title": "headline max 80 chars (no brand prefix for Mixed)", "description": "2-4 sentences based STRICTLY on the headline. Restate what the headline says in clear English. If the headline mentions specific details (model name, numbers, location), include them. Do NOT add information not present in the headline — no guessing specs, strategies, or market impact. If the headline is vague, the description should be short and factual.", "impact": "critical|medium|info", "manufacturer": "ManufacturerName or Mixed", "original_index": number}]}\n\nIf NO articles match ACCEPT criteria: {"items": []}` }
+            { role: 'system', content: 'You curate PRODUCT-focused news about heat pump manufacturers. Return JSON only. Base your summaries on the article excerpts provided. If no excerpt is available, summarize only what the headline says — do NOT invent details.' },
+            { role: 'user', content: `News articles potentially about heat pump manufacturers:\n\n${mfgList}\n\n=== ACCEPT (must be about a SPECIFIC named brand) ===\n• New heat pump model / product launch (e.g., "LG launches Therma V R290")\n• Refrigerant or technology release (R290, R32, propane, CO2)\n• Factory news (new plant, capacity expansion, layoffs, relocation)\n• M&A / partnerships / acquisitions involving a brand\n• Financial results / sales volumes by brand\n• New B2B distribution or rental fleet from a brand\n\n=== REJECT (do NOT include even if a brand is mentioned) ===\n• Subsidy / grant / funding programs\n• Government policy / regulation / EPBD / tax credit\n• Generic market trend articles ("heat pump sales up in Country X")\n• Energy price news / electricity / gas tariffs\n• Installation tips / consumer guides / buying advice\n\nFor each ACCEPTED article identify the MANUFACTURER NAME (e.g., "Bosch", "Daikin", "Vaillant", "LG", "NIBE").\nIf an article discusses MULTIPLE manufacturers together (e.g., "Bosch, Vaillant and Viessmann face competition from Chinese brands"), set manufacturer to "Mixed".\n\nIMPORTANT: If multiple articles describe the SAME event from different outlets, merge into ONE summary.\n\nReturn: {"items": [{"title": "headline max 80 chars (no brand prefix for Mixed)", "description": "3-5 sentences summarizing the article content. Include specific facts from the excerpt: numbers, model names, financial figures, locations. Never invent information not found in the headline or excerpt.", "impact": "critical|medium|info", "manufacturer": "ManufacturerName or Mixed", "original_index": number}]}\n\nIf NO articles match ACCEPT criteria: {"items": []}` }
           ], { temperature: 0.2, max_tokens: 1500, response_format: { type: 'json_object' } });
         const mfgContent = mfgCompletion.choices[0]?.message?.content;
         if (mfgContent) {
@@ -506,12 +547,22 @@ module.exports = async function handler(req, res) {
 
         if (articles.length === 0) continue;
 
-        const articleList = articles.map((a, i) => `${i + 1}. "${a.title}" (${a.source}, ${a.date})`).join('\n');
+        // Decode URLs + fetch article text for Llama context
+        for (const a of articles) {
+          a.directUrl = await decodeGoogleNewsUrl(a.url);
+          a.text = await fetchArticleText(a.directUrl || a.url);
+        }
 
-        // Llama: news summarization only (subsidy/market extraction moved to Gemini cron)
+        const articleList = articles.map((a, i) => {
+          let entry = `${i + 1}. "${a.title}" (${a.source}, ${a.date})`;
+          if (a.text) entry += `\n   Article excerpt: ${a.text.slice(0, 400)}`;
+          return entry;
+        }).join('\n\n');
+
+        // Llama: news summarization based on real article content
         const completion = await groqChat(groq, [
-            { role: 'system', content: 'You analyze news headlines about heat pump subsidies and policy. Return JSON only. CRITICAL: You only have article HEADLINES — you have NOT read the articles. Do NOT invent or guess content beyond what the headline says.' },
-            { role: 'user', content: `Real news articles about heat pumps in ${country.name}:\n\n${articleList}\n\nFor each RELEVANT article (subsidies, energy policy, heating regulations), create a summary.\n\nIMPORTANT DEDUP RULE: If multiple articles describe the SAME event or topic (e.g. same subsidy change reported by different outlets), merge them into ONE summary and note all sources. Do not create separate entries for the same story from different websites.\n\nReturn: {"items": [{"title": "headline max 80 chars", "description": "2-3 sentences", "impact": "critical|medium|info", "original_index": number}]}\n\nSkip unrelated. If none relevant: {"items": []}` }
+            { role: 'system', content: 'You analyze news about heat pump subsidies and policy. Return JSON only. Base your summaries on the article excerpts provided. If no excerpt is available, summarize only what the headline says — do NOT invent details.' },
+            { role: 'user', content: `News articles about heat pumps in ${country.name}:\n\n${articleList}\n\nFor each RELEVANT article (subsidies, energy policy, heating regulations), create a summary.\n\nIMPORTANT DEDUP RULE: If multiple articles describe the SAME event or topic (e.g. same subsidy change reported by different outlets), merge them into ONE summary and note all sources. Do not create separate entries for the same story from different websites.\n\nReturn: {"items": [{"title": "headline max 80 chars", "description": "2-4 sentences based on the article excerpt. Include specific facts: amounts, dates, program names, percentages. Never invent information not in the excerpt or headline.", "impact": "critical|medium|info", "original_index": number}]}\n\nSkip unrelated. If none relevant: {"items": []}` }
           ], { temperature: 0.2, max_tokens: 800, response_format: { type: 'json_object' } });
 
         const content = completion.choices[0]?.message?.content;
@@ -537,15 +588,14 @@ module.exports = async function handler(req, res) {
             results.alerts.push({ country: country.name, title: item.title });
           }
 
-          // Decode Google News redirect → direct article URL (fallback: keep original)
-          const directNewsUrl = await decodeGoogleNewsUrl(origArticle.url || '');
+          // Use pre-decoded direct URL (already resolved above), fallback to original
           await fetch(`${SUPABASE_URL}/rest/v1/news`, {
             method: 'POST',
             headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
             body: JSON.stringify({
               country_id: country.id, date: origArticle.date, title: item.title,
               description: item.description || '', impact: item.impact || 'info',
-              source_name: origArticle.source || '', source_url: directNewsUrl || origArticle.url || '', category: 'subsidy'
+              source_name: origArticle.source || '', source_url: origArticle.directUrl || origArticle.url || '', category: 'subsidy'
             })
           });
           results.news++;
