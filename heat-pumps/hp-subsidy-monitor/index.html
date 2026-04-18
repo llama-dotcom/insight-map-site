@@ -453,7 +453,8 @@ function filterT(){
 document.getElementById('news').innerHTML=NEWS.map(n=>{
   const ic=n.i==='critical'?'n-hi':n.i==='medium'?'n-me':'n-lo';
   const bc=n.i==='critical'?'imp-c':n.i==='medium'?'imp-m':'imp-i';
-  const nDate=n.created_at?new Date(n.created_at):null;
+  const rawD=n.d&&n.d.includes('T')?n.d:n.created_at;
+  const nDate=rawD?new Date(rawD):null;
   const nDateStr=nDate?`${String(nDate.getDate()).padStart(2,'0')}.${String(nDate.getMonth()+1).padStart(2,'0')}.${nDate.getFullYear()}`:n.d;
   return`<div class="gc n-card ${ic}"><div class="n-mt"><span>${n.c} · ${nDateStr}</span><span class="imp ${bc}">${n.i}</span></div><div class="n-tt">${n.t}</div><div class="n-ds">${n.ds}</div><div class="n-sr">${n.src.map(s=>`<a href="${s.u}" target="_blank">${s.n}</a>`).join(' · ')}</div></div>`;
 }).join('');
@@ -511,7 +512,8 @@ function openM(nm){
   if(cn.length){
     h+=`<div class="m-s"><h3><i data-lucide="radio-tower" style="width:14px;height:14px;"></i> Policy Changes</h3>`;
     cn.forEach(n=>{const bc=n.i==='critical'?'imp-c':n.i==='medium'?'imp-m':'imp-i';
-      const mDate=n.created_at?new Date(n.created_at):null;
+      const mRaw=n.d&&n.d.includes('T')?n.d:n.created_at;
+      const mDate=mRaw?new Date(mRaw):null;
       const mDateStr=mDate?`${String(mDate.getDate()).padStart(2,'0')}.${String(mDate.getMonth()+1).padStart(2,'0')}.${mDate.getFullYear()}`:(n.d||'');
       h+=`<div class="m-cd"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;"><span class="nm">${n.t}</span><span class="imp ${bc}">${n.i}</span></div><div style="font-size:0.68rem;color:var(--dim);margin-bottom:3px;">${mDateStr}</div><div class="dt">${n.ds}</div>${n.src&&n.src.length?`<div style="margin-top:4px;">${n.src.map(s=>`<a href="${s.u}" target="_blank" style="font-size:0.72rem;color:var(--accent);">${s.n} →</a>`).join(' · ')}</div>`:''}</div>`;});
     h+=`</div>`;
@@ -632,7 +634,8 @@ async function loadFromDB(){
       document.getElementById('news').innerHTML=NEWS.map(n=>{
         const ic=n.i==='critical'?'n-hi':n.i==='medium'?'n-me':'n-lo';
         const bc=n.i==='critical'?'imp-c':n.i==='medium'?'imp-m':'imp-i';
-        const nDate2=n.created_at?new Date(n.created_at):null;
+        const rawD2=n.d&&n.d.includes('T')?n.d:n.created_at;
+        const nDate2=rawD2?new Date(rawD2):null;
         const nDateStr2=nDate2?`${String(nDate2.getDate()).padStart(2,'0')}.${String(nDate2.getMonth()+1).padStart(2,'0')}.${nDate2.getFullYear()}`:n.d;
         return`<div class="gc n-card ${ic}"><div class="n-mt"><span>${n.c} · ${nDateStr2}</span><span class="imp ${bc}">${n.i}</span></div><div class="n-tt">${n.t}</div><div class="n-ds">${n.ds}</div><div class="n-sr">${n.src.map(s=>`<a href="${s.u}" target="_blank" style="color:var(--accent);font-size:0.72rem;">${s.n} →</a>`).join(' · ')}</div></div>`;
       }).join('');
