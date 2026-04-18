@@ -318,14 +318,20 @@ module.exports = async function handler(req, res) {
       // DE locale works best for HP manufacturer news (German press dominates HP coverage)
       // One query per major brand to maximize results
       const mfgRssFeeds = [
+        // DE locale — strong for European brands
         { q: 'Daikin Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' },
         { q: 'Bosch Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' },
         { q: 'Vaillant Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' },
         { q: 'Viessmann Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' },
         { q: 'NIBE Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' },
         { q: 'Stiebel Eltron Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' },
-        { q: 'Mitsubishi Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' },
-        { q: 'Panasonic Wärmepumpe', hl: 'de', gl: 'DE', ceid: 'DE:de' }
+        // EN locale — better for Asian/global brands
+        { q: 'Daikin heat pump', hl: 'en', gl: 'GB', ceid: 'GB:en' },
+        { q: 'LG Therma V heat pump', hl: 'en', gl: 'GB', ceid: 'GB:en' },
+        { q: 'Samsung heat pump', hl: 'en', gl: 'GB', ceid: 'GB:en' },
+        { q: 'Mitsubishi Ecodan heat pump', hl: 'en', gl: 'GB', ceid: 'GB:en' },
+        { q: 'Panasonic Aquarea heat pump', hl: 'en', gl: 'GB', ceid: 'GB:en' },
+        { q: 'NIBE heat pump', hl: 'en', gl: 'GB', ceid: 'GB:en' },
       ];
       let mfgArticles = [];
       for (const feed of mfgRssFeeds) {
@@ -418,11 +424,10 @@ module.exports = async function handler(req, res) {
               method: 'POST',
               headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
               body: JSON.stringify({
-                country_id: 'MFG', date: origArticle.date, title: item.title,
+                country_id: 'MFG', date: origArticle.pubDateIso || origArticle.date, title: item.title,
                 description: item.description || '', impact: item.impact || 'info',
                 source_name: origArticle.source || '', source_url: directUrl || origArticle.url || '',
-                category: 'manufacturer',
-                created_at: origArticle.pubDateIso || new Date().toISOString()
+                category: 'manufacturer'
               })
             });
             if (insertRes.ok) {
@@ -607,10 +612,9 @@ module.exports = async function handler(req, res) {
             method: 'POST',
             headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
             body: JSON.stringify({
-              country_id: country.id, date: origArticle.date, title: item.title,
+              country_id: country.id, date: origArticle.pubDateIso || origArticle.date, title: item.title,
               description: item.description || '', impact: item.impact || 'info',
-              source_name: origArticle.source || '', source_url: origArticle.directUrl || origArticle.url || '', category: 'subsidy',
-              created_at: origArticle.pubDateIso || new Date().toISOString()
+              source_name: origArticle.source || '', source_url: origArticle.directUrl || origArticle.url || '', category: 'subsidy'
             })
           });
           results.news++;
