@@ -627,7 +627,9 @@ async function loadFromDB(){
         const ra = COUNTRY_RANK[codeByName[a.c]] || 99;
         const rb = COUNTRY_RANK[codeByName[b.c]] || 99;
         if (ra !== rb) return ra - rb;
-        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+        const dateA = a.d && a.d.includes('T') ? a.d : a.created_at;
+        const dateB = b.d && b.d.includes('T') ? b.d : b.created_at;
+        return new Date(dateB || 0) - new Date(dateA || 0);
       });
       // Re-render everything
       renderT();
