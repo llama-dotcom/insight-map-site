@@ -343,7 +343,7 @@ module.exports = async function handler(req, res) {
             if (daysDiff <= 60) {
               const title = match[1].trim().replace(/<!\[CDATA\[|\]\]>/g, '');
               if (!mfgArticles.some(a => a.title === title)) {
-                mfgArticles.push({ title, url: match[2].trim(), date: pubDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }), source: match[4].trim().replace(/<!\[CDATA\[|\]\]>/g, '') });
+                mfgArticles.push({ title, url: match[2].trim(), date: pubDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }), pubDateIso: pubDate.toISOString(), source: match[4].trim().replace(/<!\[CDATA\[|\]\]>/g, '') });
               }
             }
           }
@@ -369,6 +369,7 @@ module.exports = async function handler(req, res) {
                 title,
                 url: cpMatch[2].trim(),
                 date: pubDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+                pubDateIso: pubDate.toISOString(),
                 source: 'Cooling Post'
               });
               cpAdded++;
@@ -401,6 +402,10 @@ module.exports = async function handler(req, res) {
           results.mfg_items_extracted = mfgItems.length;
           for (const item of mfgItems) {
             if (!item.title || !item.manufacturer) continue;
+            // Quality gate: reject filler descriptions
+            const mfgDesc = (item.description || '').toLowerCase();
+            const MFG_FILLER = ['not specified', 'not provided', 'not mentioned', 'not available', 'does not provide', 'not related'];
+            if (!item.description || item.description.length < 60 || MFG_FILLER.some(p => mfgDesc.includes(p))) continue;
             const origArticle = mfgArticles[item.original_index - 1] || mfgArticles[0];
             // Decode Google News redirect → direct article URL (fallback: keep original)
             const directUrl = await decodeGoogleNewsUrl(origArticle.url || '');
@@ -416,7 +421,8 @@ module.exports = async function handler(req, res) {
                 country_id: 'MFG', date: origArticle.date, title: item.title,
                 description: item.description || '', impact: item.impact || 'info',
                 source_name: origArticle.source || '', source_url: directUrl || origArticle.url || '',
-                category: 'manufacturer'
+                category: 'manufacturer',
+                created_at: origArticle.pubDateIso || new Date().toISOString()
               })
             });
             if (insertRes.ok) {
@@ -528,6 +534,7 @@ module.exports = async function handler(req, res) {
                     title,
                     url: match[2].trim(),
                     date: pubDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+                    pubDateIso: pubDate.toISOString(),
                     source: match[4].trim().replace(/<!\[CDATA\[|\]\]>/g, '')
                   });
                 }
@@ -573,6 +580,13 @@ module.exports = async function handler(req, res) {
 
         for (const item of newsItems) {
           if (!item.title) continue;
+          // Quality gate: reject filler/empty descriptions
+          const desc = (item.description || '').toLowerCase();
+          const FILLER_PHRASES = ['not specified', 'not provided', 'not mentioned', 'not available', 'details are unclear', 'no specific', 'does not provide', 'not related to'];
+          if (!item.description || item.description.length < 60 || FILLER_PHRASES.some(p => desc.includes(p))) {
+            results.news_rejected = (results.news_rejected || 0) + 1;
+            continue;
+          }
           const origArticle = articles[item.original_index - 1] || articles[0];
 
           // Check duplicates
@@ -595,7 +609,8 @@ module.exports = async function handler(req, res) {
             body: JSON.stringify({
               country_id: country.id, date: origArticle.date, title: item.title,
               description: item.description || '', impact: item.impact || 'info',
-              source_name: origArticle.source || '', source_url: origArticle.directUrl || origArticle.url || '', category: 'subsidy'
+              source_name: origArticle.source || '', source_url: origArticle.directUrl || origArticle.url || '', category: 'subsidy',
+              created_at: origArticle.pubDateIso || new Date().toISOString()
             })
           });
           results.news++;
