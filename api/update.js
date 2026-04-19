@@ -571,13 +571,20 @@ module.exports = async function handler(req, res) {
           a.text = await fetchArticleText(a.directUrl || a.url);
         }
 
-        // Drop paywall articles — no text = no reliable summary
-        articles = articles.filter(a => a.text && a.text.length > 50);
-        if (articles.length === 0) continue;
+        // Separate: articles WITH text (high-quality) vs headline-only
+        const withText = articles.filter(a => a.text && a.text.length > 50);
+        const headlineOnly = articles.filter(a => !a.text || a.text.length <= 50);
+        // Prioritize articles with text; add headline-only if we need more
+        const finalArticles = [...withText, ...headlineOnly].slice(0, maxArticles);
+        if (finalArticles.length === 0) continue;
 
-        const articleList = articles.map((a, i) => {
+        const articleList = finalArticles.map((a, i) => {
           let entry = `${i + 1}. "${a.title}" (${a.source}, ${a.date})`;
-          entry += `\n   Article excerpt: ${a.text.slice(0, 400)}`;
+          if (a.text && a.text.length > 50) {
+            entry += `\n   Article excerpt: ${a.text.slice(0, 400)}`;
+          } else {
+            entry += `\n   [Headline only — write 1-2 factual sentences restating the headline. No invented details.]`;
+          }
           return entry;
         }).join('\n\n');
 
@@ -602,7 +609,7 @@ module.exports = async function handler(req, res) {
             results.news_rejected = (results.news_rejected || 0) + 1;
             continue;
           }
-          const origArticle = articles[item.original_index - 1] || articles[0];
+          const origArticle = finalArticles[item.original_index - 1] || finalArticles[0];
 
           // Check duplicates
           const existCheck = await fetch(
