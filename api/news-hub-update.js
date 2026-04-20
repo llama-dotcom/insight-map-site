@@ -102,6 +102,8 @@ const handler = async function (req, res) {
           { q: 'geopolitics international diplomacy', lang: 'en', gl: 'US' },
           { q: 'war conflict', lang: 'en', gl: 'US' },
           { q: 'sanctions elections president prime minister', lang: 'en', gl: 'US' },
+          { q: 'breaking news world today', lang: 'en', gl: 'US' },
+          { q: 'USA China Russia Europe policy', lang: 'en', gl: 'US' },
         ],
         filterPrompt: 'You are a world politics news editor. Keep ONLY truly important global political news: wars, peace deals, major elections, summits (G7/G20/NATO/UN), sanctions, diplomatic breakthroughs, leadership changes in major countries. Remove gossip, opinion, minor domestic politics, entertainment, sports.',
       },
