@@ -1,10 +1,30 @@
+// Simple in-memory rate limiter (resets on cold start, ~5-15 min idle)
+const rateLimitMap = new Map();
+const RATE_LIMIT = 3; // max requests per IP per hour
+const RATE_WINDOW = 60 * 60 * 1000; // 1 hour
+
 module.exports = async function handler(req, res) {
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS — restrict to our domain only
+  const origin = req.headers.origin || '';
+  const allowed = origin.includes('insight-map.com') || origin.includes('localhost');
+  res.setHeader('Access-Control-Allow-Origin', allowed ? origin : 'https://insight-map.com');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // Rate limiting by IP
+  const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (entry && now - entry.start < RATE_WINDOW) {
+    if (entry.count >= RATE_LIMIT) {
+      return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    }
+    entry.count++;
+  } else {
+    rateLimitMap.set(ip, { start: now, count: 1 });
+  }
 
   const SUPABASE_URL = (process.env.SUPABASE_URL || '').trim();
   const SUPABASE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
@@ -23,7 +43,8 @@ module.exports = async function handler(req, res) {
     // Honeypot: reject if hidden field is filled (anti-spam)
     if (req.body.website) return res.status(200).json({ ok: true }); // silent reject
 
-    const cleanMsg = message.trim().slice(0, 5000);
+    // Strip HTML tags for safety
+    const cleanMsg = message.trim().slice(0, 5000).replace(/<[^>]*>/g, '');
 
     // 1. Save to Supabase
     if (SUPABASE_URL && SUPABASE_KEY) {
