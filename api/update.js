@@ -168,6 +168,9 @@ async function decodeGoogleNewsUrl(sourceUrl) {
 async function fetchArticleText(url) {
   try {
     if (!url || url.includes('news.google.com')) return '';
+    // Paywall sites — text extraction unreliable, produces hallucinated summaries
+    const PAYWALL_DOMAINS = ['welt.de', 'bild.de', 'spiegel.de', 'faz.net', 'zeit.de', 'handelsblatt.com', 'ft.com', 'wsj.com', 'telegraph.co.uk', 'thetimes.co.uk'];
+    try { if (PAYWALL_DOMAINS.some(d => new URL(url).hostname.includes(d))) return ''; } catch(e) {}
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HPSubsidyBot/1.0)' },
       signal: AbortSignal.timeout(8000)
