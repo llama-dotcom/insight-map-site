@@ -14,11 +14,13 @@ const handler = async function (req, res) {
   const results = { total: 0, by_section: {}, errors: [] };
 
   try {
-    // --- Auth: fail-closed. Allow Vercel cron OR bearer CRON_SECRET. ---
+    // --- Auth: allow Vercel cron, CRON_SECRET, or same-origin requests (Referer check) ---
     const isVercelCron = req.headers['x-vercel-cron'] === '1';
     const cronSecret = process.env.CRON_SECRET_NEWS_HUB;
     const authHeader = req.headers.authorization;
-    if (!isVercelCron && (!cronSecret || authHeader !== `Bearer ${cronSecret}`)) {
+    const referer = req.headers.referer || '';
+    const isSameOrigin = referer.includes('insight-map.com');
+    if (!isVercelCron && !isSameOrigin && (!cronSecret || authHeader !== `Bearer ${cronSecret}`)) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
