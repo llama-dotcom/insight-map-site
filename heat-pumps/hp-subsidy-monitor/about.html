@@ -153,6 +153,19 @@ footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid v
   <p>This dashboard uses AI-assisted data collection and processing. While multiple validation checks are applied, <strong>errors are possible</strong>. Always verify critical figures via the source links (↗) provided on the dashboard before making financial or business decisions.</p>
 </div>
 
+<!-- ============ 7. ANONYMOUS FEEDBACK ============ -->
+<h2><i data-lucide="message-circle" style="width:18px;height:18px;color:var(--accent);"></i> Feedback</h2>
+<div class="gc">
+  <p style="margin-bottom:12px;">Found an error? Have a suggestion? We'd love to hear from you. <strong>All feedback is anonymous</strong> — no personal data is collected or stored.</p>
+  <form id="feedback-form" onsubmit="return submitFeedback(event)">
+    <textarea id="fb-msg" rows="4" placeholder="Your feedback..." required style="width:100%;padding:10px 14px;border:1px solid var(--glass-b);border-radius:8px;background:var(--bg2);color:var(--text);font-family:inherit;font-size:0.85rem;resize:vertical;outline:none;"></textarea>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:10px;">
+      <button type="submit" id="fb-btn" style="padding:8px 24px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-size:0.82rem;font-weight:600;cursor:pointer;">Send Feedback</button>
+      <span id="fb-status" style="font-size:0.78rem;color:var(--dim);"></span>
+    </div>
+  </form>
+</div>
+
 </div>
 
 <footer>
@@ -160,6 +173,35 @@ footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid v
 </footer>
 
 <script>
+async function submitFeedback(e) {
+  e.preventDefault();
+  const btn = document.getElementById('fb-btn');
+  const status = document.getElementById('fb-status');
+  const msg = document.getElementById('fb-msg').value.trim();
+  if (!msg) return false;
+  btn.disabled = true;
+  status.textContent = 'Sending...';
+  try {
+    const res = await fetch('/api/submit-feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg })
+    });
+    if (res.ok) {
+      status.textContent = 'Thank you for your feedback!';
+      status.style.color = 'var(--green)';
+      document.getElementById('fb-msg').value = '';
+    } else {
+      status.textContent = 'Could not send. Please try again later.';
+      status.style.color = 'var(--red)';
+    }
+  } catch (err) {
+    status.textContent = 'Network error. Please try again.';
+    status.style.color = 'var(--red)';
+  }
+  btn.disabled = false;
+  return false;
+}
 lucide.createIcons();
 </script>
 </body>
