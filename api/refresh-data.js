@@ -361,8 +361,6 @@ function computePatches(country, gemini) {
   // ===== MARKET SIZE =====
   // Rule: market data is annual sales — must be CONFIRMED ACTUAL year (currentYear - 1 or earlier)
   // Forecasts and current-year H1 numbers are rejected to avoid contamination
-  const CURRENT_YEAR = new Date().getFullYear();
-  const MAX_MARKET_YEAR = CURRENT_YEAR - 1; // e.g., in 2026, latest valid = 2025
   if (market && typeof market === 'object' && market.value_thousands != null) {
     const url = market.source_url;
     const tier = getSourceTier(url);
