@@ -184,7 +184,7 @@ TASK 3 — STATUS & OUTLOOK
 Based on your research:
 
 • status: Is the subsidy program currently "active" (accepting applications), "expiring" (end date announced or approaching), or "discontinued" (cancelled, suspended, no longer available)?
-• outlook: Write 1-2 sentences about the near-term policy direction for heat pumps in this country. Focus on concrete facts (budget changes, program extensions, regulatory shifts), not speculation.
+• outlook: Write 2-3 sentences about the CURRENT (${new Date().getFullYear()}) policy direction for heat pumps in this country. Focus on what is happening NOW and near-future: recent budget changes, program launches or extensions, regulatory updates from THIS year. Do NOT write about past years (2024, 2025) unless directly relevant to current situation. No speculation or generic statements.
 
 ═══════════════════════════════════════════════════════
 CURRENT DATABASE VALUES (for context only — return latest you can verify):
@@ -214,7 +214,7 @@ RETURN FORMAT — ONLY this JSON, no markdown, no other text:
     "includes_a2a": <true|false>,
     "confidence": <0.0-1.0>
   },
-  "outlook": "<1-2 sentences: near-term policy direction for heat pumps in this country. Concrete facts only, no speculation.>",
+  "outlook": "<2-3 sentences: CURRENT year policy direction. What is happening NOW with heat pump policy in this country? Recent changes, launches, budget updates. No past-year forecasts.>",
   "reasoning": "<2-3 sentences max — what you found and any uncertainties>"
 }
 
