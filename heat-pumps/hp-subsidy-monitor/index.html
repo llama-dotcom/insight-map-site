@@ -500,6 +500,7 @@ function openM(nm){
   h+=`<div class="m-s"><h3><i data-lucide="bolt" style="width:14px;height:14px;"></i> Energy & Market</h3>`;
   h+=`<div class="m-rw"><span style="color:var(--muted)">Electricity</span><span>€${c.e.toFixed(3)}/kWh</span></div>`;
   h+=`<div class="m-rw"><span style="color:var(--muted)">Gas</span><span>${gs}</span></div>`;
+  h+=`<div style="font-size:0.65rem;color:var(--dim);margin-top:-2px;margin-bottom:4px;">Prices incl. all taxes & levies · Eurostat household band 2,500–5,000 kWh/yr</div>`;
   h+=`<div class="m-rw"><span style="color:var(--muted)">Ratio</span><span style="color:${c.r&&c.r>3.5?'var(--red)':c.r&&c.r>2.5?'var(--yellow)':'var(--green)'}">${rs}</span></div>`;
   // Market: ↗ link to verified source, method note (incl. A2A or similar) on second line
   const mktLink = c.marketUrl ? ` <a href="${c.marketUrl}" target="_blank" rel="noopener" title="${(c.marketNote||'Verified source').replace(/"/g,'&quot;')}" style="color:var(--accent);text-decoration:none;font-size:0.78rem;">↗</a>` : '';
