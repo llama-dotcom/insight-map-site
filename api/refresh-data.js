@@ -269,6 +269,8 @@ function passesTier(tier, confidence, isFirstWrite, changeFraction) {
 // Compute patches with tiered trust + year-forward + first-time-write rule
 // =============================================================
 function computePatches(country, gemini) {
+  const CURRENT_YEAR = new Date().getFullYear();
+  const MAX_MARKET_YEAR = CURRENT_YEAR - 1;
   const patches = {};
   const decisions = [];
   const { subsidy, market } = gemini.parsed || {};
